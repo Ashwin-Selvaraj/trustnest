@@ -7,12 +7,12 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ## 1. Monorepo Scaffold
 
-- [ ] Init Turborepo with `pnpm` workspaces
-- [ ] Create `packages/shared`, `packages/contracts`, `packages/sdk`, `packages/ui-kit`, `packages/backend`, `packages/mobile` directories
-- [ ] Add `turbo.json` with `build`, `dev`, `test`, `typecheck` pipelines
-- [ ] Configure TypeScript `strict` mode in each package's `tsconfig.json`
-- [ ] Add root `.eslintrc` with no-default-export rule
-- [ ] Verify `turbo run build` succeeds end-to-end
+- [x] Init Turborepo with `pnpm` workspaces
+- [x] Create `packages/shared`, `packages/contracts`, `packages/sdk`, `packages/ui-kit`, `packages/backend`, `packages/mobile` directories
+- [x] Add `turbo.json` with `build`, `dev`, `test`, `typecheck` pipelines
+- [x] Configure TypeScript `strict` mode in each package's `tsconfig.json`
+- [x] Add root `.eslintrc` with no-default-export rule
+- [x] Verify `turbo run build` succeeds end-to-end
 
 ---
 
