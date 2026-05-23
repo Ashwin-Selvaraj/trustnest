@@ -1,0 +1,25 @@
+{
+  "name": "@trustnest/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "@trustnest/contracts": "workspace:*",
+    "@trustnest/shared": "workspace:*",
+    "ethers": "^6.13.4"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@trustnest/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "expo start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "@trustnest/shared": "workspace:*",
+    "@trustnest/ui-kit": "workspace:*"
+  },
+  "peerDependencies": {
+    "expo": ">=52.0.0",
+    "react": ">=18.0.0",
+    "react-native": ">=0.73.0"
+  }
+}
