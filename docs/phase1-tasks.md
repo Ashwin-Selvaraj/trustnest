@@ -30,27 +30,27 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ## 3. @trustnest/contracts
 
-- [ ] Init Hardhat project (`npx hardhat init`)
-- [ ] Install OpenZeppelin v5 (`@openzeppelin/contracts`)
-- [ ] Write `TrustNestRegistry.sol`
-  - [ ] `register`, `deregister`, `getWallet`, `getUserId`
-  - [ ] `OPERATOR_ROLE` via `AccessControl`
-  - [ ] Unit tests: register, deregister, duplicate register reverts
-- [ ] Write `EscrowVault.sol`
-  - [ ] `deposit`, `release`, `raiseDispute`, `resolveDispute`, `emergencyRefund`
-  - [ ] `ReentrancyGuard` on state-changing functions
-  - [ ] Unit tests: full deposit→release flow, deduction, dispute resolve, over-deduction reverts
-- [ ] Write `AgreementNFT.sol`
-  - [ ] Dual-mint (tenant + owner tokens per agreement)
-  - [ ] `updateMetadata` callable by operator
-  - [ ] Unit tests: mint, metadata URI, non-operator update reverts
-- [ ] Write `ReputationSBT.sol`
-  - [ ] ERC-5192 soulbound — `locked()` always `true`, transfer reverts
-  - [ ] `scoreOf` average computation
-  - [ ] Unit tests: mint, transfer revert, scoreOf average
-- [ ] Configure TypeChain (`ethers-v6` target) — generated types into `typechain-types/`
-- [ ] Write Hardhat deploy scripts for Amoy testnet
-- [ ] Run `turbo run test --filter=@trustnest/contracts` — all pass
+- [x] Init Hardhat project (`npx hardhat init`)
+- [x] Install OpenZeppelin v5 (`@openzeppelin/contracts`)
+- [x] Write `TrustNestRegistry.sol`
+  - [x] `register`, `deregister`, `getWallet`, `getUserId`
+  - [x] `OPERATOR_ROLE` via `AccessControl`
+  - [x] Unit tests: register, deregister, duplicate register reverts
+- [x] Write `EscrowVault.sol`
+  - [x] `deposit`, `release`, `raiseDispute`, `resolveDispute`, `emergencyRefund`
+  - [x] `ReentrancyGuard` on state-changing functions
+  - [x] Unit tests: full deposit→release flow, deduction, dispute resolve, over-deduction reverts
+- [x] Write `AgreementNFT.sol`
+  - [x] Dual-mint (tenant + owner tokens per agreement)
+  - [x] `updateMetadata` callable by operator
+  - [x] Unit tests: mint, metadata URI, non-operator update reverts
+- [x] Write `ReputationSBT.sol`
+  - [x] ERC-5192 soulbound — `locked()` always `true`, transfer reverts
+  - [x] `scoreOf` average computation
+  - [x] Unit tests: mint, transfer revert, scoreOf average
+- [x] Configure TypeChain (`ethers-v6` target) — generated types into `typechain-types/`
+- [x] Write Hardhat deploy scripts for Amoy testnet
+- [x] Run `turbo run test --filter=@trustnest/contracts` — all pass
 
 ---
 
