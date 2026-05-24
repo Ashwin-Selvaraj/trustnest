@@ -1,3 +1,15 @@
-// @trustnest/shared — types, constants, and pure utilities
-// Implementations added in Phase 1 Task 2
-export {};
+export {
+  UserRole,
+  KycStatus,
+  AgreementStatus,
+  PaymentType,
+  PaymentStatus,
+  JobType,
+  JobStatus,
+  EscrowStatus,
+} from './types/enums';
+
+export type { ContractAddresses } from './constants/contracts';
+export { CONTRACT_ADDRESSES, USDC_MAINNET_ADDRESS } from './constants/contracts';
+
+export { inrToUsdc } from './utils/currency';

@@ -18,13 +18,13 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ## 2. @trustnest/shared
 
-- [ ] Define enums: `UserRole`, `KycStatus`, `AgreementStatus`, `PaymentType`, `PaymentStatus`, `JobType`, `JobStatus`
-- [ ] Define `ContractAddresses` type and `CONTRACT_ADDRESSES` constant (testnet values; mainnet TBD)
-- [ ] Add USDC mainnet address constant (`0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`)
-- [ ] Add INR→USDC conversion utility (pure function, takes forex rate as argument)
-- [ ] Add `agreementIdToBytes32` util (keccak256 of UUID string)
-- [ ] Export everything from `packages/shared/src/index.ts`
-- [ ] Zero external dependencies confirmed (`package.json` has no `dependencies`)
+- [x] Define enums: `UserRole`, `KycStatus`, `AgreementStatus`, `PaymentType`, `PaymentStatus`, `JobType`, `JobStatus`
+- [x] Define `ContractAddresses` type and `CONTRACT_ADDRESSES` constant (testnet values; mainnet TBD)
+- [x] Add USDC mainnet address constant (`0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359`)
+- [x] Add INR→USDC conversion utility (pure function, takes forex rate as argument)
+- [x] Add `agreementIdToBytes32` util (keccak256 of UUID string) — lives in `@trustnest/sdk/src/utils.ts`; ethers already a dep there; shared stays zero-dep
+- [x] Export everything from `packages/shared/src/index.ts`
+- [x] Zero external dependencies confirmed (`package.json` has no `dependencies`)
 
 ---
 
