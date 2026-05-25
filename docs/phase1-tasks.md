@@ -70,97 +70,97 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ## 5. @trustnest/backend — Infrastructure
 
-- [ ] Init NestJS project (`nest new`)
-- [ ] Configure TypeORM with PostgreSQL (`@nestjs/typeorm`)
-- [ ] Set up `.env` schema with `@nestjs/config` + Joi validation
-  - [ ] `DATABASE_URL`, `JWT_SECRET`, `POLYGON_RPC_URL`, `OPERATOR_KEY_ENCRYPTED`, `OPERATOR_KEY_IV`, `NETWORK`
-- [ ] Write TypeORM migrations for all entities (User, Wallet, Agreement, PaymentEvent, BlockchainJob, ReputationToken)
-- [ ] Add all DB indexes (see `docs/db-schema.md`)
-- [ ] Configure `BlockchainService` to instantiate `TrustNestSDK` on startup
-- [ ] Add NestJS cron job (every 30 s) to retry `PENDING`/`FAILED` BlockchainJobs with exponential backoff
-- [ ] Global exception filter → standard error format
+- [x] Init NestJS project (`nest new`)
+- [x] Configure TypeORM with PostgreSQL (`@nestjs/typeorm`)
+- [x] Set up `.env` schema with `@nestjs/config` + Joi validation
+  - [x] `DATABASE_URL`, `JWT_SECRET`, `POLYGON_RPC_URL`, `OPERATOR_KEY_ENCRYPTED`, `OPERATOR_KEY_IV`, `NETWORK`
+- [x] Write TypeORM migrations for all entities (User, Wallet, Agreement, PaymentEvent, BlockchainJob, ReputationToken)
+- [x] Add all DB indexes (see `docs/db-schema.md`)
+- [x] Configure `BlockchainService` to instantiate `TrustNestSDK` on startup
+- [x] Add NestJS cron job (every 30 s) to retry `PENDING`/`FAILED` BlockchainJobs with exponential backoff
+- [x] Global exception filter → standard error format
 
 ---
 
 ## 6. @trustnest/backend — Auth Module
 
-- [ ] `POST /auth/send-otp` — generate OTP, store in Redis with 5-min TTL
-- [ ] `POST /auth/verify-otp` — validate, create User + Wallet rows, issue JWT pair
-- [ ] `POST /auth/refresh` — rotate refresh token
-- [ ] JWT guard applied globally; `@Public()` decorator for unprotected routes
-- [ ] Auto-call `RegistryModule.registerUser` after wallet creation (via BlockchainJob queue)
+- [x] `POST /auth/send-otp` — generate OTP, store in Redis with 5-min TTL
+- [x] `POST /auth/verify-otp` — validate, create User + Wallet rows, issue JWT pair
+- [x] `POST /auth/refresh` — rotate refresh token
+- [x] JWT guard applied globally; `@Public()` decorator for unprotected routes
+- [x] Auto-call `RegistryModule.registerUser` after wallet creation (via BlockchainJob queue)
 
 ---
 
 ## 7. @trustnest/backend — Users Module
 
-- [ ] `GET /users/me`
-- [ ] `PATCH /users/me`
-- [ ] `POST /users/me/kyc` — upload to S3, enqueue KYC provider job, return jobId
-- [ ] KYC webhook handler — update `kycStatus` on callback
-- [ ] `GET /users/:id/reputation` (public)
+- [x] `GET /users/me`
+- [x] `PATCH /users/me`
+- [x] `POST /users/me/kyc` — upload to S3, enqueue KYC provider job, return jobId
+- [x] KYC webhook handler — update `kycStatus` on callback
+- [x] `GET /users/:id/reputation` (public)
 
 ---
 
 ## 8. @trustnest/backend — Agreements Module
 
-- [ ] `POST /agreements` — create DRAFT
-- [ ] `GET /agreements/:id`
-- [ ] `GET /agreements` — paginated list for auth user
-- [ ] `POST /agreements/:id/confirm` — both parties must confirm; on second confirm → enqueue `MINT_AGREEMENT_NFT` job
-- [ ] On NFT job completion → update `nftTokenIdTenant`, `nftTokenIdOwner`, status → `PENDING_DEPOSIT`
-- [ ] `POST /agreements/:id/dispute` — sets status `DISPUTED`, emits `raiseDispute` on-chain via job
-- [ ] `POST /agreements/:id/rate` — save review to `ReputationToken`, trigger `MINT_REPUTATION_SBT` job if both parties rated
-- [ ] Guard: only parties to the agreement can access it
+- [x] `POST /agreements` — create DRAFT
+- [x] `GET /agreements/:id`
+- [x] `GET /agreements` — paginated list for auth user
+- [x] `POST /agreements/:id/confirm` — both parties must confirm; on second confirm → enqueue `MINT_AGREEMENT_NFT` job
+- [x] On NFT job completion → update `nftTokenIdTenant`, `nftTokenIdOwner`, status → `PENDING_DEPOSIT`
+- [x] `POST /agreements/:id/dispute` — sets status `DISPUTED`, emits `raiseDispute` on-chain via job
+- [x] `POST /agreements/:id/rate` — save review to `ReputationToken`, trigger `MINT_REPUTATION_SBT` job if both parties rated
+- [x] Guard: only parties to the agreement can access it
 
 ---
 
 ## 9. @trustnest/backend — Payments Module
 
-- [ ] `POST /payments/initiate` — create Razorpay order, return order ID + UPI deep link
-- [ ] `POST /payments/webhook` — validate HMAC, write `PaymentEvent` (PENDING), enqueue `DEPOSIT_ESCROW` job
-- [ ] On escrow job completion → update `PaymentEvent` status → CONFIRMED, agreement status → ACTIVE
-- [ ] `POST /agreements/:id/release` — validate no dispute, validate owner auth, write `PaymentEvent` (RELEASE), enqueue `RELEASE_ESCROW` job
-- [ ] `GET /payments/:agreementId` — payment history
+- [x] `POST /payments/initiate` — create Razorpay order, return order ID + UPI deep link
+- [x] `POST /payments/webhook` — validate HMAC, write `PaymentEvent` (PENDING), enqueue `DEPOSIT_ESCROW` job
+- [x] On escrow job completion → update `PaymentEvent` status → CONFIRMED, agreement status → ACTIVE
+- [x] `POST /agreements/:id/release` — validate no dispute, validate owner auth, write `PaymentEvent` (RELEASE), enqueue `RELEASE_ESCROW` job
+- [x] `GET /payments/:agreementId` — payment history
 
 ---
 
 ## 10. @trustnest/backend — Admin Module
 
-- [ ] `GET /admin/jobs` — list pending/failed jobs (IP-whitelisted)
-- [ ] `POST /admin/jobs/:id/retry` — force-retry a job
-- [ ] `POST /admin/disputes/:agreementId/resolve` — write dispute resolution, enqueue `RESOLVE_DISPUTE` job, then `MINT_REPUTATION_SBT`
+- [x] `GET /admin/jobs` — list pending/failed jobs (IP-whitelisted)
+- [x] `POST /admin/jobs/:id/retry` — force-retry a job
+- [x] `POST /admin/disputes/:agreementId/resolve` — write dispute resolution, enqueue `RESOLVE_DISPUTE` job, then `MINT_REPUTATION_SBT`
 
 ---
 
 ## 11. @trustnest/ui-kit
 
-- [ ] Set up React Native + TypeScript + Expo config
-- [ ] `Button` component (primary / secondary / destructive variants)
-- [ ] `TextInput` component (with INR formatting helper)
-- [ ] `AgreementCard` component
-- [ ] `ReputationBadge` component (score stars + count)
-- [ ] `StatusChip` component (agreement status colours)
-- [ ] `OtpInput` component (6-digit, auto-advance)
-- [ ] Storybook / Expo Go previews for all components
-- [ ] No blockchain imports — confirmed by ESLint rule
+- [x] Set up React Native + TypeScript + Expo config
+- [x] `Button` component (primary / secondary / destructive variants)
+- [x] `TextInput` component (with INR formatting helper)
+- [x] `AgreementCard` component
+- [x] `ReputationBadge` component (score stars + count)
+- [x] `StatusChip` component (agreement status colours)
+- [x] `OtpInput` component (6-digit, auto-advance)
+- [x] Storybook / Expo Go previews for all components
+- [x] No blockchain imports — confirmed by ESLint rule
 
 ---
 
 ## 12. @trustnest/mobile
 
-- [ ] Init Expo project
-- [ ] Configure Expo Router (file-based routing)
-- [ ] Auth flow: phone entry → OTP verify → home
-- [ ] Home screen: active agreements list
-- [ ] Agreement detail screen: status, parties, deposit amount, action buttons
-- [ ] Create agreement screen (tenant invites owner or vice versa)
-- [ ] Confirm agreement screen (PDF preview + confirm CTA)
-- [ ] UPI payment screen: initiate deposit → poll status → success
-- [ ] Dispute screen: reason input + evidence upload
-- [ ] Profile screen: KYC status, reputation score, past agreements
-- [ ] Push notifications: FCM integration, receive agreement + payment events
-- [ ] Deep link handling for UPI return URLs
+- [x] Init Expo project
+- [x] Configure Expo Router (file-based routing)
+- [x] Auth flow: phone entry → OTP verify → home
+- [x] Home screen: active agreements list
+- [x] Agreement detail screen: status, parties, deposit amount, action buttons
+- [x] Create agreement screen (tenant invites owner or vice versa)
+- [x] Confirm agreement screen (PDF preview + confirm CTA)
+- [x] UPI payment screen: initiate deposit → poll status → success
+- [x] Dispute screen: reason input + evidence upload
+- [x] Profile screen: KYC status, reputation score, past agreements
+- [x] Push notifications: FCM integration, receive agreement + payment events
+- [x] Deep link handling for UPI return URLs
 
 ---
 
