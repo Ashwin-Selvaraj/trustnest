@@ -56,15 +56,15 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ## 4. @trustnest/sdk
 
-- [ ] Implement `RegistryModule` (`registerUser`, `deregisterUser`, `getWalletAddress`, `getUserId`)
-- [ ] Implement `EscrowModule` (`deposit`, `release`, `raiseDispute`, `resolveDispute`, `getEscrow`)
-  - [ ] Auto-approve USDC allowance if insufficient
-- [ ] Implement `AgreementModule` (`mintAgreement`, `updateMetadata`, `getTokenByAgreement`, `getMetadataURI`)
-- [ ] Implement `ReputationModule` (`mintReputation`, `getScore`, `getTokensByOwner`)
-- [ ] Implement `TrustNestSDK` root class
-- [ ] Define `ContractRevertError`, `InsufficientGasError`, `RpcConnectionError`
-- [ ] All methods wait for 1 confirmation
-- [ ] Unit tests with Hardhat local node
+- [x] Implement `RegistryModule` (`registerUser`, `deregisterUser`, `getWalletAddress`, `getUserId`)
+- [x] Implement `EscrowModule` (`deposit`, `release`, `raiseDispute`, `resolveDispute`, `getEscrow`)
+  - [x] Auto-approve USDC allowance if insufficient
+- [x] Implement `AgreementModule` (`mintAgreement`, `updateMetadata`, `getTokenByAgreement`, `getMetadataURI`)
+- [x] Implement `ReputationModule` (`mintReputation`, `getScore`, `getTokensByOwner`)
+- [x] Implement `TrustNestSDK` root class
+- [x] Define `ContractRevertError`, `InsufficientGasError`, `RpcConnectionError`
+- [x] All methods wait for 1 confirmation
+- [x] Unit tests with Hardhat local node
 
 ---
 
