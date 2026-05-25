@@ -2,19 +2,21 @@
   "name": "@trustnest/contracts",
   "version": "0.0.0",
   "private": true,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "hardhat compile",
+    "dev": "hardhat compile",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/",
-    "test": "echo \"No tests yet\" && exit 0"
+    "lint": "eslint scripts/ test/",
+    "test": "hardhat test",
+    "test:watch": "hardhat test --watch",
+    "deploy:amoy": "hardhat run scripts/deploy.ts --network amoy",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "node": "hardhat node"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "hardhat": "^2.22.17",
+    "ts-node": "^10.9.2"
   }
 }

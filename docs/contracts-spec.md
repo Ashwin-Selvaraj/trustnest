@@ -139,6 +139,8 @@ function tokenURI(uint256 tokenId) public view override returns (string memory);
 ### Responsibility
 ERC-5192 soulbound token minted to tenant and owner at successful agreement close. Accumulates silently — each close adds one token to each party's address. Scores can be read by any frontend.
 
+**Key architectural decision:** the on-chain contract is a *score storage layer only*. It stores whatever `uint8 score` the backend passes to `mint()`. All scoring logic — whether simple peer ratings (Phase 1) or rich behavioural signals (Phase 2) — is computed **off-chain in the backend** and passed as the final composite score. The contract never needs to change between phases.
+
 ### Key Storage
 ```solidity
 mapping(address => uint256[]) public tokensByOwner;
@@ -147,10 +149,12 @@ mapping(uint256 tokenId => ReputationData) public reputationOf;
 struct ReputationData {
     bytes32 agreementId;
     Role role;              // TENANT | OWNER
-    uint8 score;            // 1–5, set by counterparty rating
+    uint8 score;            // 1–100 composite (see scoring model below)
     uint256 mintedAt;
 }
 ```
+
+> Note: score range changed from 1–5 to **1–100** to give headroom for the weighted composite in Phase 2 without a contract change. The frontend divides by 20 to display a 1–5 star rating.
 
 ### Functions
 ```solidity
@@ -165,10 +169,69 @@ function locked(uint256 tokenId) external pure override returns (bool) {
 function scoreOf(address user) external view returns (uint256 average, uint256 count);
 ```
 
+### Reputation Scoring Model
+
+The backend computes a composite score (1–100) before calling `mint`. The model evolves by phase:
+
+#### Phase 1 — Peer Rating Only
+Score = peer rating submitted by the counterparty at agreement close, mapped to 1–100.
+
+| Stars given | Score stored |
+|---|---|
+| 5 ⭐ | 100 |
+| 4 ⭐ | 80 |
+| 3 ⭐ | 60 |
+| 2 ⭐ | 40 |
+| 1 ⭐ | 20 |
+
+If a counterparty does not submit a rating within 7 days of close, the backend defaults to 60 (neutral).
+
+#### Phase 2 — Behavioural Signals (weighted composite)
+
+The backend will compute a weighted score from multiple signals before calling `mint`. Proposed weights (to be tuned):
+
+**Tenant signals**
+
+| Signal | Weight | How measured |
+|---|---|---|
+| Peer rating by owner | 40% | Submitted at close |
+| Rent payment timeliness | 40% | DB: due date vs `PaymentEvent.createdAt` per monthly payment |
+| Dispute raised (tenant-initiated) | −10% flat penalty | DB: `Agreement.disputeRaisedBy == TENANT` |
+| Dispute outcome (if raised) | ±10% | Kleros ruling in tenant's favour = +10, against = −10 |
+
+Rent timeliness sub-score:
+- Paid on or before due date → 100
+- 1–2 days late → 80
+- 3–7 days late → 50
+- >7 days late or missed → 0
+- Sub-score = average across all monthly payments in the agreement.
+
+**Owner signals**
+
+| Signal | Weight | How measured |
+|---|---|---|
+| Peer rating by tenant | 40% | Submitted at close |
+| Deposit release promptness | 30% | DB: `Agreement.endDate` vs `PaymentEvent(RELEASE).createdAt` |
+| Dispute resolution speed | 20% | DB: `disputeRaisedAt` vs `disputeResolvedAt` |
+| Dispute outcome (if raised) | ±10% | Kleros ruling |
+
+Release promptness sub-score:
+- Released within 3 days of end date → 100
+- 4–7 days → 80
+- 8–14 days → 50
+- >14 days → 0
+
+Dispute resolution speed sub-score (Phase 2 when owner can resolve without Kleros):
+- Resolved within 3 days of dispute raised → 100
+- 4–7 days → 80
+- 8–14 days → 50
+- >14 days or escalated to Kleros → 20
+
 ### Design Decisions
 - **Soulbound (ERC-5192)**: `locked()` always returns `true`; `transfer` reverts. Reputation cannot be sold or gamed by wallet swapping.
-- Rating (1–5) is submitted by the counterparty at close via the backend and passed into `mint`. On-chain only stores the numeric score — written review text lives in Postgres.
-- `scoreOf` computes average in Solidity to avoid exposing raw token lists to the frontend (gas concern managed by keeping list short in Phase 1).
+- **Off-chain scoring, on-chain storage**: behavioural signals are observable only in the backend (Postgres payment events, timestamps). Computing them on-chain would require oracle feeds or state that isn't worth the gas cost. The contract is the tamper-proof ledger; the scoring formula lives in the backend and is documented here for auditability.
+- **1–100 range**: gives enough integer precision for weighted averages without floating point. Frontend always displays as stars (÷20).
+- `scoreOf` computes the on-chain average across all SBTs for a wallet. The backend also maintains a denormalised `reputationScore` column on the `User` row for fast API reads.
 
 ---
 

@@ -1,7 +1,7 @@
 # Phase 1 Task Checklist
 
-Phase 1 scope: custodial wallets, UPI deposit/release flow, manual dispute handling.
-Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Chainlink Automation (Phase 2).
+Phase 1 scope: custodial wallets, UPI deposit/release flow, manual dispute handling, peer-rating reputation.
+Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Chainlink Automation (Phase 2), behavioural reputation signals — rent timeliness / dispute resolution speed / release promptness (Phase 2).
 
 ---
 
@@ -30,27 +30,27 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ## 3. @trustnest/contracts
 
-- [ ] Init Hardhat project (`npx hardhat init`)
-- [ ] Install OpenZeppelin v5 (`@openzeppelin/contracts`)
-- [ ] Write `TrustNestRegistry.sol`
-  - [ ] `register`, `deregister`, `getWallet`, `getUserId`
-  - [ ] `OPERATOR_ROLE` via `AccessControl`
-  - [ ] Unit tests: register, deregister, duplicate register reverts
-- [ ] Write `EscrowVault.sol`
-  - [ ] `deposit`, `release`, `raiseDispute`, `resolveDispute`, `emergencyRefund`
-  - [ ] `ReentrancyGuard` on state-changing functions
-  - [ ] Unit tests: full deposit→release flow, deduction, dispute resolve, over-deduction reverts
-- [ ] Write `AgreementNFT.sol`
-  - [ ] Dual-mint (tenant + owner tokens per agreement)
-  - [ ] `updateMetadata` callable by operator
-  - [ ] Unit tests: mint, metadata URI, non-operator update reverts
-- [ ] Write `ReputationSBT.sol`
-  - [ ] ERC-5192 soulbound — `locked()` always `true`, transfer reverts
-  - [ ] `scoreOf` average computation
-  - [ ] Unit tests: mint, transfer revert, scoreOf average
-- [ ] Configure TypeChain (`ethers-v6` target) — generated types into `typechain-types/`
-- [ ] Write Hardhat deploy scripts for Amoy testnet
-- [ ] Run `turbo run test --filter=@trustnest/contracts` — all pass
+- [x] Init Hardhat project (`npx hardhat init`)
+- [x] Install OpenZeppelin v5 (`@openzeppelin/contracts`)
+- [x] Write `TrustNestRegistry.sol`
+  - [x] `register`, `deregister`, `getWallet`, `getUserId`
+  - [x] `OPERATOR_ROLE` via `AccessControl`
+  - [x] Unit tests: register, deregister, duplicate register reverts
+- [x] Write `EscrowVault.sol`
+  - [x] `deposit`, `release`, `raiseDispute`, `resolveDispute`, `emergencyRefund`
+  - [x] `ReentrancyGuard` on state-changing functions
+  - [x] Unit tests: full deposit→release flow, deduction, dispute resolve, over-deduction reverts
+- [x] Write `AgreementNFT.sol`
+  - [x] Dual-mint (tenant + owner tokens per agreement)
+  - [x] `updateMetadata` callable by operator
+  - [x] Unit tests: mint, metadata URI, non-operator update reverts
+- [x] Write `ReputationSBT.sol`
+  - [x] ERC-5192 soulbound — `locked()` always `true`, transfer reverts
+  - [x] `scoreOf` average computation
+  - [x] Unit tests: mint, transfer revert, scoreOf average
+- [x] Configure TypeChain (`ethers-v6` target) — generated types into `typechain-types/`
+- [x] Write Hardhat deploy scripts for Amoy testnet
+- [x] Run `turbo run test --filter=@trustnest/contracts` — all pass
 
 ---
 
@@ -193,3 +193,33 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 - [ ] Either party can raise a dispute; admin can resolve it via admin API
 - [ ] All amounts tracked in Postgres; on-chain txs retried automatically on failure
 - [ ] `turbo run test` and `turbo run typecheck` pass with zero errors
+
+---
+
+## Phase 2 — Behavioural Reputation (planned, not started)
+
+These items depend on Phase 2 infrastructure (recurring rent payment flow, Kleros dispute resolution). The `ReputationSBT` contract does **not** need to change — score computation is off-chain in the backend.
+
+### Tenant signals
+- [ ] Track monthly rent due dates per agreement; record `PaymentEvent` with `dueDate` field
+- [ ] Compute rent timeliness sub-score at close: average across all monthly payments
+  - On time (≤ due date) → 100, 1–2 days late → 80, 3–7 days late → 50, >7 days late → 0
+- [ ] Include rent timeliness in composite score (weight: 40%)
+- [ ] Apply −10 flat penalty if tenant raised a dispute (weight: 10%)
+- [ ] Include Kleros dispute outcome in composite score (weight: 10%)
+
+### Owner signals
+- [ ] Record `releaseInitiatedAt` on `Agreement`; compute release promptness relative to `endDate`
+  - ≤3 days → 100, 4–7 days → 80, 8–14 days → 50, >14 days → 0
+- [ ] Include release promptness in composite score (weight: 30%)
+- [ ] Record `disputeRaisedAt` and `disputeResolvedAt` on `Agreement`; compute resolution speed
+  - ≤3 days → 100, 4–7 days → 80, 8–14 days → 50, >14 days / escalated → 20
+- [ ] Include dispute resolution speed in composite score (weight: 20%)
+- [ ] Include Kleros dispute outcome in composite score (weight: 10%)
+
+### Shared backend changes for Phase 2 reputation
+- [ ] `ReputationService.computeTenantScore(agreementId)` — returns 1–100 composite
+- [ ] `ReputationService.computeOwnerScore(agreementId)` — returns 1–100 composite
+- [ ] Update `mintReputation` flow to call these instead of passing raw peer rating
+- [ ] Expose `reputationBreakdown` field on `GET /reputation/:userId` — shows per-signal sub-scores
+- [ ] Backfill score formula version on `ReputationToken` row so historic tokens are interpretable after formula changes
