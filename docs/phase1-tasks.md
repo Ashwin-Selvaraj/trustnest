@@ -1,7 +1,7 @@
 # Phase 1 Task Checklist
 
-Phase 1 scope: custodial wallets, UPI deposit/release flow, manual dispute handling.
-Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Chainlink Automation (Phase 2).
+Phase 1 scope: custodial wallets, UPI deposit/release flow, manual dispute handling, peer-rating reputation.
+Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Chainlink Automation (Phase 2), behavioural reputation signals — rent timeliness / dispute resolution speed / release promptness (Phase 2).
 
 ---
 
@@ -193,3 +193,33 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 - [ ] Either party can raise a dispute; admin can resolve it via admin API
 - [ ] All amounts tracked in Postgres; on-chain txs retried automatically on failure
 - [ ] `turbo run test` and `turbo run typecheck` pass with zero errors
+
+---
+
+## Phase 2 — Behavioural Reputation (planned, not started)
+
+These items depend on Phase 2 infrastructure (recurring rent payment flow, Kleros dispute resolution). The `ReputationSBT` contract does **not** need to change — score computation is off-chain in the backend.
+
+### Tenant signals
+- [ ] Track monthly rent due dates per agreement; record `PaymentEvent` with `dueDate` field
+- [ ] Compute rent timeliness sub-score at close: average across all monthly payments
+  - On time (≤ due date) → 100, 1–2 days late → 80, 3–7 days late → 50, >7 days late → 0
+- [ ] Include rent timeliness in composite score (weight: 40%)
+- [ ] Apply −10 flat penalty if tenant raised a dispute (weight: 10%)
+- [ ] Include Kleros dispute outcome in composite score (weight: 10%)
+
+### Owner signals
+- [ ] Record `releaseInitiatedAt` on `Agreement`; compute release promptness relative to `endDate`
+  - ≤3 days → 100, 4–7 days → 80, 8–14 days → 50, >14 days → 0
+- [ ] Include release promptness in composite score (weight: 30%)
+- [ ] Record `disputeRaisedAt` and `disputeResolvedAt` on `Agreement`; compute resolution speed
+  - ≤3 days → 100, 4–7 days → 80, 8–14 days → 50, >14 days / escalated → 20
+- [ ] Include dispute resolution speed in composite score (weight: 20%)
+- [ ] Include Kleros dispute outcome in composite score (weight: 10%)
+
+### Shared backend changes for Phase 2 reputation
+- [ ] `ReputationService.computeTenantScore(agreementId)` — returns 1–100 composite
+- [ ] `ReputationService.computeOwnerScore(agreementId)` — returns 1–100 composite
+- [ ] Update `mintReputation` flow to call these instead of passing raw peer rating
+- [ ] Expose `reputationBreakdown` field on `GET /reputation/:userId` — shows per-signal sub-scores
+- [ ] Backfill score formula version on `ReputationToken` row so historic tokens are interpretable after formula changes

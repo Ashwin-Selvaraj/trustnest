@@ -201,9 +201,9 @@ export class ReputationModule {
   async mintReputation(params: {
     agreementId:   string;
     tenantAddress: string;
-    tenantScore:   number;   // 1–5
+    tenantScore:   number;   // 1–100 composite (Phase 1: peer rating mapped ×20; Phase 2: weighted composite)
     ownerAddress:  string;
-    ownerScore:    number;   // 1–5
+    ownerScore:    number;   // 1–100 composite
   }): Promise<{
     tenantTokenId: bigint;
     ownerTokenId:  bigint;
@@ -211,7 +211,8 @@ export class ReputationModule {
   }>
 
   async getScore(walletAddress: string): Promise<{
-    average: number;   // floating point, computed from on-chain average * 10 / 10
+    average: number;   // 1–100, average of all SBT scores for this wallet
+    stars:   number;   // average / 20, for display (1.0–5.0)
     count:   number;
   }>
 
