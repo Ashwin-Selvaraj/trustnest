@@ -2,8 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "resolveJsonModule": true,
+    "strictPropertyInitialization": false
   },
-  "include": ["src/**/*"],
+  "include": [
+    "hardhat.config.ts",
+    "src/**/*",
+    "test/**/*"
+  ],
   "exclude": ["node_modules", "dist"]
 }
