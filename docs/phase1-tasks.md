@@ -313,52 +313,52 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ### A. @trustnest/shared — new enums and types
 
-- [ ] Add `BhkType` enum: `STUDIO | ONE_BHK | TWO_BHK | THREE_BHK | FOUR_BHK_PLUS | VILLA | INDEPENDENT_HOUSE`
-- [ ] Add `FurnishingStatus` enum: `UNFURNISHED | SEMI_FURNISHED | FULLY_FURNISHED`
-- [ ] Add `PropertyStatus` enum: `DRAFT | ACTIVE | PAUSED | RENTED`
-- [ ] Add `InterestStatus` enum: `PENDING | ACCEPTED | DECLINED | WITHDRAWN`
-- [ ] Add `TenantPreference` enum: `FAMILY | BACHELORS | WORKING_PROFESSIONAL | STUDENTS | ANY`
+- [x] Add `BhkType` enum: `STUDIO | ONE_BHK | TWO_BHK | THREE_BHK | FOUR_BHK_PLUS | VILLA | INDEPENDENT_HOUSE`
+- [x] Add `FurnishingStatus` enum: `UNFURNISHED | SEMI_FURNISHED | FULLY_FURNISHED`
+- [x] Add `PropertyStatus` enum: `DRAFT | ACTIVE | PAUSED | RENTED`
+- [x] Add `InterestStatus` enum: `PENDING | ACCEPTED | DECLINED | WITHDRAWN`
+- [x] Add `TenantPreference` enum: `FAMILY | BACHELORS | WORKING_PROFESSIONAL | STUDENTS | ANY`
 
 ### B. Backend — Data model additions
 
-- [ ] Add `Property` entity (`packages/backend/src/properties/property.entity.ts`):
-  - [ ] `id: uuid`
-  - [ ] `ownerId: uuid` (FK → User)
-  - [ ] `title: string` (e.g. "2BHK in Indiranagar")
-  - [ ] `address: string`
-  - [ ] `city: string` (indexed — primary search field)
-  - [ ] `locality: string` (indexed — secondary search field)
-  - [ ] `bhkType: BhkType`
-  - [ ] `furnishingStatus: FurnishingStatus`
-  - [ ] `monthlyRentINR: decimal`
-  - [ ] `depositINR: decimal`
-  - [ ] `areaSqft: number | null`
-  - [ ] `floorNumber: number | null`
-  - [ ] `totalFloors: number | null`
-  - [ ] `description: string | null`
-  - [ ] `amenities: string[]` (jsonb column — parking, gym, lift, etc.)
-  - [ ] `preferredTenants: TenantPreference[]` (jsonb column)
-  - [ ] `availableFrom: Date`
-  - [ ] `status: PropertyStatus` (default `DRAFT`)
+- [x] Add `Property` entity (`packages/backend/src/properties/property.entity.ts`):
+  - [x] `id: uuid`
+  - [x] `ownerId: uuid` (FK → User)
+  - [x] `title: string` (e.g. "2BHK in Indiranagar")
+  - [x] `address: string`
+  - [x] `city: string` (indexed — primary search field)
+  - [x] `locality: string` (indexed — secondary search field)
+  - [x] `bhkType: BhkType`
+  - [x] `furnishingStatus: FurnishingStatus`
+  - [x] `monthlyRentINR: decimal`
+  - [x] `depositINR: decimal`
+  - [x] `areaSqft: number | null`
+  - [x] `floorNumber: number | null`
+  - [x] `totalFloors: number | null`
+  - [x] `description: string | null`
+  - [x] `amenities: string[]` (jsonb column — parking, gym, lift, etc.)
+  - [x] `preferredTenants: TenantPreference[]` (jsonb column)
+  - [x] `availableFrom: Date`
+  - [x] `status: PropertyStatus` (default `DRAFT`)
 
-- [ ] Add `PropertyImage` entity:
-  - [ ] `id: uuid`
-  - [ ] `propertyId: uuid` (FK → Property)
-  - [ ] `s3Key: string`
-  - [ ] `url: string`
-  - [ ] `displayOrder: number` (lower = shown first)
-  - [ ] `isPrimary: boolean` (cover photo for listing cards)
+- [x] Add `PropertyImage` entity:
+  - [x] `id: uuid`
+  - [x] `propertyId: uuid` (FK → Property)
+  - [x] `s3Key: string`
+  - [x] `url: string`
+  - [x] `displayOrder: number` (lower = shown first)
+  - [x] `isPrimary: boolean` (cover photo for listing cards)
 
-- [ ] Add `PropertyInterest` entity:
-  - [ ] `id: uuid`
-  - [ ] `propertyId: uuid` (FK → Property)
-  - [ ] `tenantId: uuid` (FK → User)
-  - [ ] `status: InterestStatus` (default `PENDING`)
-  - [ ] `message: string | null` (optional note from tenant to owner)
-  - [ ] `agreementId: uuid | null` (populated when owner accepts → auto-created Agreement)
+- [x] Add `PropertyInterest` entity:
+  - [x] `id: uuid`
+  - [x] `propertyId: uuid` (FK → Property)
+  - [x] `tenantId: uuid` (FK → User)
+  - [x] `status: InterestStatus` (default `PENDING`)
+  - [x] `message: string | null` (optional note from tenant to owner)
+  - [x] `agreementId: uuid | null` (populated when owner accepts → auto-created Agreement)
 
-- [ ] Write TypeORM migration covering all three new tables
-- [ ] Add DB indexes:
+- [x] Write TypeORM migration covering all three new tables
+- [x] Add DB indexes:
   - `idx_properties_search` on `(city, locality, status, monthly_rent_inr)`
   - `idx_properties_owner` on `(owner_id, status)`
   - `idx_interests_property` on `(property_id, status)`
@@ -367,72 +367,72 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 ### C. Backend — Properties Module *(new NestJS module)*
 
 #### Listing CRUD
-- [ ] `POST /properties` — owner creates listing; requires `RequiresKyc` + `RequiresOwnerRole` guards; initial status `DRAFT`
-- [ ] `GET /properties` — public search; query params: `city`, `locality`, `minRent`, `maxRent`, `bhkType`, `furnishingStatus`, `availableFrom`; paginated (default 20); returns listing cards (no sensitive owner data)
-- [ ] `GET /properties/:id` — public detail view; includes owner's public profile (name + reputation score + KYC badge — no phone/wallet)
-- [ ] `PATCH /properties/:id` — owner edits listing; auth + ownership check; cannot edit if `status === RENTED`
-- [ ] `PATCH /properties/:id/status` — owner toggles `ACTIVE ↔ PAUSED`; separate endpoint to make intent explicit
-- [ ] `DELETE /properties/:id` — soft delete (sets status to `DRAFT`); only if no `PENDING` or `ACCEPTED` interests exist
+- [x] `POST /properties` — owner creates listing; requires `RequiresKyc` + `RequiresOwnerRole` guards; initial status `DRAFT`
+- [x] `GET /properties` — public search; query params: `city`, `locality`, `minRent`, `maxRent`, `bhkType`, `furnishingStatus`, `availableFrom`; paginated (default 20); returns listing cards (no sensitive owner data)
+- [x] `GET /properties/:id` — public detail view; includes owner's public profile (name + reputation score + KYC badge — no phone/wallet)
+- [x] `PATCH /properties/:id` — owner edits listing; auth + ownership check; cannot edit if `status === RENTED`
+- [x] `PATCH /properties/:id/status` — owner toggles `ACTIVE ↔ PAUSED`; separate endpoint to make intent explicit
+- [x] `DELETE /properties/:id` — soft delete (sets status to `DRAFT`); only if no `PENDING` or `ACCEPTED` interests exist
 
 #### Photo management
-- [ ] `POST /properties/:id/photos` — multipart upload; max 10 images per property; uploads to S3; creates `PropertyImage` rows; auto-sets first upload as `isPrimary`
-- [ ] `PATCH /properties/:id/photos/:photoId/primary` — owner sets a different cover photo
-- [ ] `DELETE /properties/:id/photos/:photoId` — removes photo from S3 and DB; blocks if it's the only photo on an `ACTIVE` listing
+- [x] `POST /properties/:id/photos` — multipart upload; max 10 images per property; uploads to S3; creates `PropertyImage` rows; auto-sets first upload as `isPrimary`
+- [x] `PATCH /properties/:id/photos/:photoId/primary` — owner sets a different cover photo
+- [x] `DELETE /properties/:id/photos/:photoId` — removes photo from S3 and DB; blocks if it's the only photo on an `ACTIVE` listing
 
 #### Publishing gate
-- [ ] Block `PATCH /properties/:id/status` to `ACTIVE` if property is missing: title, address, at least 1 photo, `monthlyRentINR`, `depositINR`, `availableFrom` — return `422` with a list of missing fields
+- [x] Block `PATCH /properties/:id/status` to `ACTIVE` if property is missing: title, address, at least 1 photo, `monthlyRentINR`, `depositINR`, `availableFrom` — return `422` with a list of missing fields
 
 ### D. Backend — Interests Module *(new NestJS module)*
 
-- [ ] `POST /properties/:id/interest` — tenant expresses interest; requires `RequiresKyc` + `RequiresTenantRole` guards; one active interest per tenant per property (block duplicates); creates `PropertyInterest` with status `PENDING`; sends push notification to owner
-- [ ] `GET /properties/:id/interests` — owner sees all interested tenants for their listing; each interest includes tenant's name, reputation score, KYC status badge; requires auth + ownership check
-- [ ] `GET /users/me/interests` — tenant's full interest history with property summary + status chip
-- [ ] `PATCH /properties/:id/interests/:interestId/accept` — **critical join endpoint**:
-  - [ ] Validates caller is the property owner
-  - [ ] Sets `PropertyInterest.status = ACCEPTED`
-  - [ ] Sets all other `PENDING` interests on same property to `DECLINED` (one tenant per property)
-  - [ ] Auto-creates `Agreement` record pre-filled from property: `tenantId`, `ownerId`, `propertyAddress`, `monthlyRentINR`, `depositINR`; status `DRAFT`
-  - [ ] Writes `agreementId` back onto `PropertyInterest` row
-  - [ ] Sends push to tenant: "Your interest was accepted — review and sign the agreement"
-  - [ ] Sends push to owner: "Agreement draft created — review and sign"
-- [ ] `PATCH /properties/:id/interests/:interestId/decline` — owner declines; sets status `DECLINED`; sends push to tenant
-- [ ] `DELETE /properties/:id/interests/:interestId` — tenant withdraws interest; only allowed while `PENDING`; sets status `WITHDRAWN`
+- [x] `POST /properties/:id/interest` — tenant expresses interest; requires `RequiresKyc` + `RequiresTenantRole` guards; one active interest per tenant per property (block duplicates); creates `PropertyInterest` with status `PENDING`; sends push notification to owner
+- [x] `GET /properties/:id/interests` — owner sees all interested tenants for their listing; each interest includes tenant's name, reputation score, KYC status badge; requires auth + ownership check
+- [x] `GET /users/me/interests` — tenant's full interest history with property summary + status chip
+- [x] `PATCH /properties/:id/interests/:interestId/accept` — **critical join endpoint**:
+  - [x] Validates caller is the property owner
+  - [x] Sets `PropertyInterest.status = ACCEPTED`
+  - [x] Sets all other `PENDING` interests on same property to `DECLINED` (one tenant per property)
+  - [x] Auto-creates `Agreement` record pre-filled from property: `tenantId`, `ownerId`, `propertyAddress`, `monthlyRentINR`, `depositINR`; status `DRAFT`
+  - [x] Writes `agreementId` back onto `PropertyInterest` row
+  - [x] Sends push to tenant: "Your interest was accepted — review and sign the agreement"
+  - [x] Sends push to owner: "Agreement draft created — review and sign"
+- [x] `PATCH /properties/:id/interests/:interestId/decline` — owner declines; sets status `DECLINED`; sends push to tenant
+- [x] `DELETE /properties/:id/interests/:interestId` — tenant withdraws interest; only allowed while `PENDING`; sets status `WITHDRAWN`
 
 ### E. Backend — New access guards
 
-- [ ] `RequiresOwnerRole` guard — checks `user.role === OWNER || user.role === BOTH`; returns `403` with `{ code: 'OWNER_ROLE_REQUIRED' }`; applied to all property write endpoints
-- [ ] `RequiresTenantRole` guard — checks `user.role === TENANT || user.role === BOTH`; returns `403` with `{ code: 'TENANT_ROLE_REQUIRED' }`; applied to `POST /properties/:id/interest`
-- [ ] Both guards require `kycStatus === VERIFIED` (build on top of `RequiresKyc`)
+- [x] `RequiresOwnerRole` guard — checks `user.role === OWNER || user.role === BOTH`; returns `403` with `{ code: 'OWNER_ROLE_REQUIRED' }`; applied to all property write endpoints
+- [x] `RequiresTenantRole` guard — checks `user.role === TENANT || user.role === BOTH`; returns `403` with `{ code: 'TENANT_ROLE_REQUIRED' }`; applied to `POST /properties/:id/interest`
+- [x] Both guards require `kycStatus === VERIFIED` (build on top of `RequiresKyc`)
 
 ### F. ui-kit — new components
 
-- [ ] `PropertyCard` component — cover photo, title, locality, BHK chip, furnishing chip, rent, deposit, owner reputation badge; used in browse feed and My Properties list
-- [ ] `PhotoGallery` component — swipeable full-width image carousel with dot indicators and image count badge
-- [ ] `FilterBar` component — horizontal scrollable row of filter chips (BHK, rent range, furnishing, availability); selected chips highlighted; `onFilterChange` callback
-- [ ] `InterestStatusChip` component — PENDING (yellow) / ACCEPTED (green) / DECLINED (red) / WITHDRAWN (grey) variants; extends existing `StatusChip` pattern
-- [ ] `TenantSummaryCard` component — for owner's interest list: tenant avatar initials, name, reputation stars, KYC badge, interest message, Accept / Decline action buttons
+- [x] `PropertyCard` component — cover photo, title, locality, BHK chip, furnishing chip, rent, deposit, owner reputation badge; used in browse feed and My Properties list
+- [x] `PhotoGallery` component — swipeable full-width image carousel with dot indicators and image count badge
+- [x] `FilterBar` component — horizontal scrollable row of filter chips (BHK, rent range, furnishing, availability); selected chips highlighted; `onFilterChange` callback
+- [x] `InterestStatusChip` component — PENDING (yellow) / ACCEPTED (green) / DECLINED (red) / WITHDRAWN (grey) variants; extends existing `StatusChip` pattern
+- [x] `TenantSummaryCard` component — for owner's interest list: tenant avatar initials, name, reputation stars, KYC badge, interest message, Accept / Decline action buttons
 
 ### G. Mobile — Navigation changes
 
-- [ ] Update bottom tab bar from 3 tabs to 4:
+- [x] Update bottom tab bar from 3 tabs to 4:
   - Tab 1: **Home** (agreements list) — existing
   - Tab 2: **Discover** (see below) — new
   - Tab 3: **Notifications** — existing (move here if not already)
   - Tab 4: **Profile** — existing
-- [ ] **Discover tab** has role-aware sub-navigation:
+- [x] **Discover tab** has role-aware sub-navigation:
   - `TENANT` role → shows Browse screen directly
   - `OWNER` role → shows My Properties screen directly
   - `BOTH` role → shows a segmented control "Browse / My Properties" at the top
 
 ### H. Mobile — Browse screens *(tenant-facing)*
 
-- [ ] **Browse / Search screen**
+- [x] **Browse / Search screen**
   - Search bar (city or locality text input)
   - `FilterBar` component below search (BHK, rent range, furnishing)
   - Vertical `FlatList` of `PropertyCard` components; paginated with infinite scroll
   - Empty state: "No properties found — try adjusting your filters"
   - Pull-to-refresh
-- [ ] **Property detail screen** (`/property/[id]`)
+- [x] **Property detail screen** (`/property/[id]`)
   - `PhotoGallery` full-width at top
   - Property specs: BHK, area, floor, furnishing, amenities chips
   - Rent + deposit prominently displayed (INR formatted)
@@ -442,24 +442,24 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - Interest message optional text input (shown before CTA, collapsible)
   - If `InterestStatus === ACCEPTED` → replace CTA with "View Agreement" button
   - If `InterestStatus === PENDING` → show "Interest sent ✓" state with "Withdraw" option
-- [ ] **My Interests screen** (`/interests`)
+- [x] **My Interests screen** (`/interests`)
   - Accessible from Profile or Discover tab (tenant role)
   - List of `PropertyCard` + `InterestStatusChip` pairs
   - Tap → goes to property detail screen
 
 ### I. Mobile — My Properties screens *(owner-facing)*
 
-- [ ] **My Properties screen**
+- [x] **My Properties screen**
   - List of owner's `PropertyCard`s with status chips (Draft / Active / Paused / Rented)
   - FAB: "Add Property" → navigates to listing creation flow
   - Tap on active listing → goes to Property Management screen
-- [ ] **Property Management screen** (`/my-properties/[id]`)
+- [x] **Property Management screen** (`/my-properties/[id]`)
   - Shows listing preview (same as public detail but with edit controls)
   - "Interested Tenants" count badge → taps into Interest Requests screen
   - Toggle: "Active / Paused"
   - "Edit listing" CTA
   - "Delete listing" (destructive, only if no accepted interests)
-- [ ] **Interest Requests screen** (`/my-properties/[id]/interests`)
+- [x] **Interest Requests screen** (`/my-properties/[id]/interests`)
   - List of `TenantSummaryCard` components
   - Empty state: "No one has expressed interest yet"
   - Accept → shows confirmation bottom sheet → calls accept endpoint → on success navigates to the newly created agreement detail
@@ -467,35 +467,35 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ### J. Mobile — Add / Edit Property flow *(owner-facing, multi-step)*
 
-- [ ] **Step 1 — Location**
+- [x] **Step 1 — Location**
   - Property title text input
   - Full address text input
   - City text input (or picker from preset list of major Indian cities)
   - Locality text input
-- [ ] **Step 2 — Property details**
+- [x] **Step 2 — Property details**
   - BHK type picker (segmented or bottom sheet selector)
   - Furnishing status picker
   - Area in sqft (optional number input)
   - Floor number / total floors (optional)
-- [ ] **Step 3 — Pricing**
+- [x] **Step 3 — Pricing**
   - Monthly rent (INR formatted number input)
   - Security deposit (INR formatted; auto-suggests 2× or 3× rent with quick-fill chips)
   - Available from date picker (calendar; minimum today)
-- [ ] **Step 4 — Preferences & description**
+- [x] **Step 4 — Preferences & description**
   - Preferred tenants multi-select chips (Family, Bachelors, Working Professional, Students, Any)
   - Amenities multi-select chips (Parking, Lift, Gym, Swimming Pool, Power Backup, etc.)
   - Description optional text area (max 500 chars)
-- [ ] **Step 5 — Photos**
+- [x] **Step 5 — Photos**
   - Photo grid (up to 10); tap to add from camera or gallery
   - Drag-to-reorder for display order (or long-press reorder)
   - Tap existing photo → full preview + option to set as cover or remove
   - "At least 1 photo required to publish" validation
-- [ ] **Step 6 — Review & Publish**
+- [x] **Step 6 — Review & Publish**
   - Preview card showing how the listing will look to tenants
   - "Save as Draft" and "Publish" CTAs
   - "Publish" validates all required fields; shows inline errors if any missing
-- [ ] Progress indicator across all steps (step dots or numbered header)
-- [ ] All steps auto-save to local state; navigating back does not lose data
+- [x] Progress indicator across all steps (step dots or numbered header)
+- [x] All steps auto-save to local state; navigating back does not lose data
 
 ---
 

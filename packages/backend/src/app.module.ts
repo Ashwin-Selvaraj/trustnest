@@ -12,12 +12,17 @@ import { PaymentsModule } from './payments/payments.module';
 import { ReputationModule } from './reputation/reputation.module';
 import { AdminModule } from './admin/admin.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
+import { PropertiesModule } from './properties/properties.module';
+import { InterestsModule } from './interests/interests.module';
 import { User } from './users/user.entity';
 import { Wallet } from './blockchain/wallet.entity';
 import { Agreement } from './agreements/agreement.entity';
 import { PaymentEvent } from './payments/payment-event.entity';
 import { BlockchainJob } from './blockchain/blockchain-job.entity';
 import { ReputationToken } from './reputation/reputation-token.entity';
+import { Property } from './properties/property.entity';
+import { PropertyImage } from './properties/property-image.entity';
+import { PropertyInterest } from './interests/property-interest.entity';
 
 @Module({
   imports: [
@@ -32,7 +37,10 @@ import { ReputationToken } from './reputation/reputation-token.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [User, Wallet, Agreement, PaymentEvent, BlockchainJob, ReputationToken],
+        entities: [
+          User, Wallet, Agreement, PaymentEvent, BlockchainJob, ReputationToken,
+          Property, PropertyImage, PropertyInterest,
+        ],
         synchronize: config.get<string>('NODE_ENV') !== 'production',
         migrations: ['dist/migrations/*.js'],
         migrationsRun: false,
@@ -57,6 +65,8 @@ import { ReputationToken } from './reputation/reputation-token.entity';
     PaymentsModule,
     ReputationModule,
     AdminModule,
+    PropertiesModule,
+    InterestsModule,
   ],
 })
 export class AppModule {}

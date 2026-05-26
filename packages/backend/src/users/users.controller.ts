@@ -93,6 +93,14 @@ export class UsersController {
     return this.usersService.deletePaymentDetails(user.sub);
   }
 
+  // ─── Interests ────────────────────────────────────────────────────────────
+
+  @Get('me/interests')
+  getMyInterests(@Req() req: Request) {
+    const user = req.user as JwtPayload;
+    return this.usersService.getMyInterests(user.sub);
+  }
+
   // ─── Public ───────────────────────────────────────────────────────────────
 
   @Public()

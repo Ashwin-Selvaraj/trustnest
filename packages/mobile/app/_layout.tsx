@@ -60,6 +60,26 @@ function RootLayoutNav(): React.ReactElement {
           name="agreement/[id]/dispute"
           options={{ headerShown: true, title: 'Raise Dispute', presentation: 'modal' }}
         />
+        <Stack.Screen
+          name="property/[id]"
+          options={{ headerShown: true, title: 'Property Details', headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="interests/index"
+          options={{ headerShown: true, title: 'My Interests', headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="my-properties/create"
+          options={{ headerShown: true, title: 'Add Property', presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="my-properties/[id]/index"
+          options={{ headerShown: true, title: 'Manage Property', headerBackTitle: 'Back' }}
+        />
+        <Stack.Screen
+          name="my-properties/[id]/interests"
+          options={{ headerShown: true, title: 'Interested Tenants', headerBackTitle: 'Back' }}
+        />
       </Stack>
     </>
   );

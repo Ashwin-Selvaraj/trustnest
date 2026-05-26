@@ -61,6 +61,28 @@ export default function TabsLayout(): React.ReactElement {
         }}
       />
       <Tabs.Screen
+        name="browse"
+        options={{
+          title: 'Discover',
+          tabBarLabel: 'Discover',
+          tabBarIcon: ({ color }) => (
+            <TabIcon emoji="🔍" color={String(color)} />
+          ),
+          headerTitle: 'Discover',
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarLabel: 'Alerts',
+          tabBarIcon: ({ color }) => (
+            <TabIcon emoji="🔔" color={String(color)} />
+          ),
+          headerTitle: 'Notifications',
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',

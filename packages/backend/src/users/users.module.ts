@@ -6,9 +6,17 @@ import { User } from './user.entity';
 import { PaymentDetails } from './payment-details.entity';
 import { Wallet } from '../blockchain/wallet.entity';
 import { ReputationToken } from '../reputation/reputation-token.entity';
+import { PropertyInterest } from '../interests/property-interest.entity';
+import { Property } from '../properties/property.entity';
+import { PropertyImage } from '../properties/property-image.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, PaymentDetails, Wallet, ReputationToken])],
+  imports: [
+    TypeOrmModule.forFeature([
+      User, PaymentDetails, Wallet, ReputationToken,
+      PropertyInterest, Property, PropertyImage,
+    ]),
+  ],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

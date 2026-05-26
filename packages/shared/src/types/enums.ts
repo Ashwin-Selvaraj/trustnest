@@ -67,3 +67,43 @@ export enum EscrowStatus {
   REFUNDED = 'REFUNDED',
   DISPUTED = 'DISPUTED',
 }
+
+// ─── Property Marketplace ─────────────────────────────────────────────────────
+
+export enum BhkType {
+  STUDIO            = 'STUDIO',
+  ONE_BHK           = 'ONE_BHK',
+  TWO_BHK           = 'TWO_BHK',
+  THREE_BHK         = 'THREE_BHK',
+  FOUR_BHK_PLUS     = 'FOUR_BHK_PLUS',
+  VILLA             = 'VILLA',
+  INDEPENDENT_HOUSE = 'INDEPENDENT_HOUSE',
+}
+
+export enum FurnishingStatus {
+  UNFURNISHED    = 'UNFURNISHED',
+  SEMI_FURNISHED = 'SEMI_FURNISHED',
+  FULLY_FURNISHED = 'FULLY_FURNISHED',
+}
+
+export enum PropertyStatus {
+  DRAFT  = 'DRAFT',
+  ACTIVE = 'ACTIVE',
+  PAUSED = 'PAUSED',
+  RENTED = 'RENTED',
+}
+
+export enum InterestStatus {
+  PENDING   = 'PENDING',
+  ACCEPTED  = 'ACCEPTED',
+  DECLINED  = 'DECLINED',
+  WITHDRAWN = 'WITHDRAWN',
+}
+
+export enum TenantPreference {
+  FAMILY               = 'FAMILY',
+  BACHELORS            = 'BACHELORS',
+  WORKING_PROFESSIONAL = 'WORKING_PROFESSIONAL',
+  STUDENTS             = 'STUDENTS',
+  ANY                  = 'ANY',
+}

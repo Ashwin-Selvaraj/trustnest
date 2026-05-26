@@ -11,12 +11,15 @@ import { User } from './user.entity';
 import { PaymentDetails } from './payment-details.entity';
 import { Wallet } from '../blockchain/wallet.entity';
 import { ReputationToken } from '../reputation/reputation-token.entity';
+import { PropertyInterest } from '../interests/property-interest.entity';
+import { Property } from '../properties/property.entity';
+import { PropertyImage } from '../properties/property-image.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { KycAadhaarInitDto } from './dto/kyc-aadhaar-init.dto';
 import { KycAadhaarVerifyDto } from './dto/kyc-aadhaar-verify.dto';
 import { KycPanDto } from './dto/kyc-pan.dto';
 import { PaymentDetailsDto } from './dto/payment-details.dto';
-import { KycStatus, KycMethod, PaymentDetailsStatus } from '@trustnest/shared';
+import { KycStatus, KycMethod, PaymentDetailsStatus, InterestStatus } from '@trustnest/shared';
 
 // In-memory store for Aadhaar OTP sessions (dev only; production: Redis)
 const aadhaarOtpStore = new Map<string, { userId: string; otp: string; expiresAt: number }>();
@@ -26,10 +29,13 @@ export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
-    @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(PaymentDetails) private readonly paymentDetailsRepo: Repository<PaymentDetails>,
-    @InjectRepository(Wallet) private readonly walletRepo: Repository<Wallet>,
-    @InjectRepository(ReputationToken) private readonly reputationRepo: Repository<ReputationToken>,
+    @InjectRepository(User)              private readonly userRepo: Repository<User>,
+    @InjectRepository(PaymentDetails)    private readonly paymentDetailsRepo: Repository<PaymentDetails>,
+    @InjectRepository(Wallet)            private readonly walletRepo: Repository<Wallet>,
+    @InjectRepository(ReputationToken)   private readonly reputationRepo: Repository<ReputationToken>,
+    @InjectRepository(PropertyInterest)  private readonly interestRepo: Repository<PropertyInterest>,
+    @InjectRepository(Property)          private readonly propertyRepo: Repository<Property>,
+    @InjectRepository(PropertyImage)     private readonly propertyImageRepo: Repository<PropertyImage>,
   ) {}
 
   async findById(id: string): Promise<User> {
@@ -267,6 +273,56 @@ export class UsersService {
   async deletePaymentDetails(userId: string): Promise<{ success: boolean }> {
     await this.paymentDetailsRepo.delete({ userId });
     return { success: true };
+  }
+
+  // ─── Property Interests ───────────────────────────────────────────────────
+
+  async getMyInterests(tenantId: string): Promise<unknown[]> {
+    const interests = await this.interestRepo
+      .createQueryBuilder('i')
+      .leftJoin('i.property', 'p')
+      .addSelect([
+        'p.id', 'p.title', 'p.city', 'p.locality',
+        'p.monthlyRentINR', 'p.status',
+      ])
+      .where('i.tenantId = :tenantId', { tenantId })
+      .orderBy('i.createdAt', 'DESC')
+      .getMany();
+
+    const result = await Promise.all(
+      interests.map(async (interest) => {
+        const prop = (interest as PropertyInterest & { property?: Property }).property;
+        let primaryImageUrl: string | null = null;
+        if (prop) {
+          const img = await this.propertyImageRepo.findOne({
+            where: { propertyId: prop.id, isPrimary: true },
+          });
+          primaryImageUrl = img?.url ?? null;
+        }
+        return {
+          id:          interest.id,
+          propertyId:  interest.propertyId,
+          tenantId:    interest.tenantId,
+          status:      interest.status,
+          message:     interest.message,
+          agreementId: interest.agreementId,
+          createdAt:   interest.createdAt,
+          updatedAt:   interest.updatedAt,
+          property:    prop
+            ? {
+                title:          prop.title,
+                city:           prop.city,
+                locality:       prop.locality,
+                monthlyRentINR: prop.monthlyRentINR,
+                status:         prop.status,
+                primaryImageUrl,
+              }
+            : null,
+        };
+      }),
+    );
+
+    return result;
   }
 
   // ─── Encryption helpers ───────────────────────────────────────────────────
