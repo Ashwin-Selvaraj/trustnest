@@ -189,3 +189,106 @@ export interface GateError {
   kycStatus?: string;
   message: string;
 }
+
+// ─── Properties ───────────────────────────────────────────────────────────────
+
+import { BhkType, FurnishingStatus, PropertyStatus, InterestStatus, TenantPreference } from '@trustnest/shared';
+
+export interface PropertyImage {
+  id: string;
+  s3Key: string;
+  url: string;
+  displayOrder: number;
+  isPrimary: boolean;
+}
+
+export interface Property {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  ownerScore: number | null;
+  title: string;
+  address: string;
+  city: string;
+  locality: string;
+  bhkType: BhkType;
+  furnishingStatus: FurnishingStatus;
+  monthlyRentINR: number;
+  depositINR: number;
+  areaSqft: number | null;
+  floorNumber: number | null;
+  totalFloors: number | null;
+  description: string | null;
+  amenities: string[];
+  preferredTenants: TenantPreference[];
+  availableFrom: string;
+  status: PropertyStatus;
+  images: PropertyImage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PropertyListResponse {
+  data: Property[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreatePropertyRequest {
+  title: string;
+  address: string;
+  city: string;
+  locality: string;
+  bhkType: BhkType;
+  furnishingStatus: FurnishingStatus;
+  monthlyRentINR: number;
+  depositINR: number;
+  areaSqft?: number;
+  floorNumber?: number;
+  totalFloors?: number;
+  description?: string;
+  amenities: string[];
+  preferredTenants: TenantPreference[];
+  availableFrom: string;
+}
+
+export interface PropertyInterest {
+  id: string;
+  propertyId: string;
+  tenantId: string;
+  tenantName?: string;
+  status: InterestStatus;
+  message: string | null;
+  agreementId: string | null;
+  createdAt: string;
+  // For tenant's interest list — property summary
+  property?: {
+    title: string;
+    city: string;
+    locality: string;
+    monthlyRentINR: number;
+    status: PropertyStatus;
+    primaryImageUrl: string | null;
+  };
+}
+
+export interface CreateInterestRequest {
+  message?: string;
+}
+
+export interface AcceptInterestResponse {
+  interestId: string;
+  agreementId: string;
+}
+
+export interface PropertySearchParams {
+  city?: string;
+  locality?: string;
+  minRent?: number;
+  maxRent?: number;
+  bhkType?: BhkType;
+  furnishingStatus?: FurnishingStatus;
+  page?: number;
+  limit?: number;
+}

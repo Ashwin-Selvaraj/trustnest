@@ -57,6 +57,25 @@ export type { TextInputProps } from './components/TextInput';
 export { AgreementCard } from './components/AgreementCard';
 export type { AgreementCardProps } from './components/AgreementCard';
 
+export { PropertyCard } from './components/PropertyCard';
+export type { PropertyCardProps } from './components/PropertyCard';
+
+export { PhotoGallery } from './components/PhotoGallery';
+export type { PhotoGalleryProps } from './components/PhotoGallery';
+
+export { FilterBar } from './components/FilterBar';
+export type { FilterBarProps, FilterItem } from './components/FilterBar';
+
+export { InterestStatusChip } from './components/InterestStatusChip';
+export type { InterestStatusChipProps } from './components/InterestStatusChip';
+
+export { TenantSummaryCard } from './components/TenantSummaryCard';
+export type { TenantSummaryCardProps } from './components/TenantSummaryCard';
+
+// ─── Re-export shared enums used by marketplace components ───────────────────
+
+export { InterestStatus, BhkType, FurnishingStatus, PropertyStatus } from '@trustnest/shared';
+
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 
 export { colors, spacing, borderRadius, typography } from './theme';

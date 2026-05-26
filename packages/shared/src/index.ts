@@ -9,6 +9,11 @@ export {
   JobType,
   JobStatus,
   EscrowStatus,
+  BhkType,
+  FurnishingStatus,
+  PropertyStatus,
+  InterestStatus,
+  TenantPreference,
 } from './types/enums';
 
 export type { ContractAddresses } from './constants/contracts';
