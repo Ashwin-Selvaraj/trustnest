@@ -1,7 +1,6 @@
 import * as React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -9,39 +8,38 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Button, TextInput, formatINR, parseINR } from '@trustnest/ui-kit';
+import {
+  NavHeader, SectionHeader, Button, TextInput, formatINR, parseINR,
+  colors, spacing,
+} from '@trustnest/ui-kit';
 import { agreementsApi } from '@/api/agreements';
 import { ApiError } from '@/api/client';
 
 interface FormState {
   propertyAddress: string;
-  rentINR: string;
-  depositINR: string;
-  startDate: string;
-  endDate: string;
+  rentINR:          string;
+  depositINR:       string;
+  startDate:        string;
+  endDate:          string;
   counterpartyPhone: string;
 }
 
 interface FormErrors {
-  propertyAddress?: string;
-  rentINR?: string;
-  depositINR?: string;
-  startDate?: string;
-  endDate?: string;
+  propertyAddress?:  string;
+  rentINR?:          string;
+  depositINR?:       string;
+  startDate?:        string;
+  endDate?:          string;
   counterpartyPhone?: string;
 }
 
-/**
- * Create agreement screen.
- * Tenant or owner fills in the property details and invites the counterparty by phone.
- */
 export default function CreateAgreementScreen(): React.ReactElement {
   const [form, setForm] = React.useState<FormState>({
-    propertyAddress: '',
-    rentINR: '',
-    depositINR: '',
-    startDate: '',
-    endDate: '',
+    propertyAddress:   '',
+    rentINR:           '',
+    depositINR:        '',
+    startDate:         '',
+    endDate:           '',
     counterpartyPhone: '',
   });
   const [errors, setErrors] = React.useState<FormErrors>({});
@@ -60,8 +58,8 @@ export default function CreateAgreementScreen(): React.ReactElement {
     const deposit = parseInt(parseINR(form.depositINR), 10);
     if (!deposit || deposit < 1000) e.depositINR = 'Deposit must be at least ₹1,000';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(form.startDate)) e.startDate = 'Use format YYYY-MM-DD';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.endDate)) e.endDate = 'Use format YYYY-MM-DD';
-    if (form.endDate <= form.startDate) e.endDate = 'End date must be after start date';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(form.endDate))   e.endDate   = 'Use format YYYY-MM-DD';
+    if (form.endDate <= form.startDate)                e.endDate   = 'End date must be after start date';
     const phone = form.counterpartyPhone.replace(/\s/g, '');
     if (!/^[6-9]\d{9}$/.test(phone)) e.counterpartyPhone = 'Enter a valid 10-digit number';
     setErrors(e);
@@ -73,20 +71,15 @@ export default function CreateAgreementScreen(): React.ReactElement {
     setIsLoading(true);
     try {
       const agreement = await agreementsApi.create({
-        propertyAddress: form.propertyAddress.trim(),
-        rentINR: parseInt(parseINR(form.rentINR), 10),
-        depositINR: parseInt(parseINR(form.depositINR), 10),
-        startDate: form.startDate,
-        endDate: form.endDate,
+        propertyAddress:   form.propertyAddress.trim(),
+        rentINR:           parseInt(parseINR(form.rentINR), 10),
+        depositINR:        parseInt(parseINR(form.depositINR), 10),
+        startDate:         form.startDate,
+        endDate:           form.endDate,
         counterpartyPhone: `+91${form.counterpartyPhone.replace(/\s/g, '')}`,
       });
       Alert.alert('Agreement Created', 'The counterparty will be notified to confirm.', [
-        {
-          text: 'View Agreement',
-          onPress: () => {
-            router.replace(`/agreement/${agreement.id}`);
-          },
-        },
+        { text: 'View Agreement', onPress: () => router.replace(`/agreement/${agreement.id}`) },
       ]);
     } catch (err: unknown) {
       Alert.alert('Error', err instanceof ApiError ? err.message : 'Failed to create agreement');
@@ -100,9 +93,10 @@ export default function CreateAgreementScreen(): React.ReactElement {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.sectionHeader}>Property Details</Text>
+      <NavHeader title="New Agreement" onBack={() => router.back()} />
 
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <SectionHeader>Property Details</SectionHeader>
         <TextInput
           label="Property Address"
           placeholder="12 MG Road, Bengaluru, Karnataka 560001"
@@ -113,8 +107,7 @@ export default function CreateAgreementScreen(): React.ReactElement {
           numberOfLines={2}
         />
 
-        <Text style={styles.sectionHeader}>Financials</Text>
-
+        <SectionHeader style={styles.sectionGap}>Financials</SectionHeader>
         <TextInput
           label="Monthly Rent"
           currencyPrefix="₹"
@@ -124,7 +117,6 @@ export default function CreateAgreementScreen(): React.ReactElement {
           onChangeText={(t) => setField('rentINR', formatINR(parseINR(t)))}
           error={errors.rentINR}
         />
-
         <TextInput
           label="Security Deposit"
           currencyPrefix="₹"
@@ -136,8 +128,7 @@ export default function CreateAgreementScreen(): React.ReactElement {
           hint="Typically 2–3 months' rent"
         />
 
-        <Text style={styles.sectionHeader}>Lease Period</Text>
-
+        <SectionHeader style={styles.sectionGap}>Lease Period</SectionHeader>
         <TextInput
           label="Start Date"
           placeholder="2025-01-01"
@@ -147,7 +138,6 @@ export default function CreateAgreementScreen(): React.ReactElement {
           hint="Format: YYYY-MM-DD"
           keyboardType="numbers-and-punctuation"
         />
-
         <TextInput
           label="End Date"
           placeholder="2025-12-31"
@@ -158,8 +148,7 @@ export default function CreateAgreementScreen(): React.ReactElement {
           keyboardType="numbers-and-punctuation"
         />
 
-        <Text style={styles.sectionHeader}>Counterparty</Text>
-
+        <SectionHeader style={styles.sectionGap}>Counterparty</SectionHeader>
         <TextInput
           label="Counterparty Phone"
           placeholder="98765 43210"
@@ -170,41 +159,27 @@ export default function CreateAgreementScreen(): React.ReactElement {
           hint="They will receive an SMS to join and confirm"
         />
 
-        <Button
-          variant="primary"
-          fullWidth
-          loading={isLoading}
-          onPress={() => void handleSubmit()}
-          style={styles.submitButton}
-        >Create Agreement</Button>
-
-        <Button
-          variant="secondary"
-          fullWidth
-          onPress={() => router.back()}
-        >Cancel</Button>
+        <View style={styles.buttons}>
+          <Button
+            variant="primary"
+            fullWidth
+            loading={isLoading}
+            onPress={() => void handleSubmit()}
+          >
+            Create Agreement
+          </Button>
+          <Button variant="secondary" fullWidth onPress={() => router.back()}>
+            Cancel
+          </Button>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#FFFFFF' },
-  container: {
-    padding: 20,
-    gap: 12,
-    paddingBottom: 48,
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  submitButton: {
-    marginTop: 8,
-  },
+  flex:       { flex: 1, backgroundColor: colors.bg },
+  container:  { padding: spacing.base, gap: spacing.sm, paddingBottom: spacing['2xl'] },
+  sectionGap: { marginTop: spacing.sm },
+  buttons:    { gap: spacing.sm, marginTop: spacing.sm },
 });
