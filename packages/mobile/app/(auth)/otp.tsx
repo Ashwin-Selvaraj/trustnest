@@ -5,19 +5,18 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { OtpInput, Button } from '@trustnest/ui-kit';
+import {
+  NavHeader, Banner, OtpInput, Button,
+  colors, spacing, fontSize, fontWeight,
+} from '@trustnest/ui-kit';
 import { authApi } from '@/api/auth';
 import { usersApi } from '@/api/users';
 import { useAuth } from '@/store/auth.store';
 import { ApiError } from '@/api/client';
 
-/**
- * OTP verification screen — step 2 of the auth flow.
- * Receives `phone` as a route param from the phone screen.
- */
 export default function OtpScreen(): React.ReactElement {
   const { phone, sessionId } = useLocalSearchParams<{ phone: string; sessionId: string }>();
   const { signIn, setUser } = useAuth();
@@ -27,7 +26,6 @@ export default function OtpScreen(): React.ReactElement {
   const [isLoading, setIsLoading] = React.useState(false);
   const [resendCountdown, setResendCountdown] = React.useState(30);
 
-  // Countdown timer for resend
   React.useEffect(() => {
     if (resendCountdown <= 0) return;
     const timer = setTimeout(() => setResendCountdown((c) => c - 1), 1000);
@@ -41,19 +39,15 @@ export default function OtpScreen(): React.ReactElement {
     try {
       const tokens = await authApi.verifyOtp({ sessionId: sessionId ?? '', otp: code });
       await signIn(tokens.accessToken, tokens.refreshToken);
-
-      // Fetch user profile to decide next screen
       try {
         const user = await usersApi.getMe();
         setUser(user);
-
         if (!user.profileComplete) {
           router.replace('/(auth)/complete-profile');
         } else {
           router.replace('/(tabs)');
         }
       } catch {
-        // Non-fatal — fallback to tabs; profile can be completed later
         router.replace('/(tabs)');
       }
     } catch (err: unknown) {
@@ -80,14 +74,13 @@ export default function OtpScreen(): React.ReactElement {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <NavHeader title="Verify OTP" onBack={() => router.back()} />
+
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Enter OTP</Text>
-          <Text style={styles.subtitle}>
-            We sent a 6-digit code to{'\n'}
-            <Text style={styles.phone}>{phone}</Text>
-          </Text>
-        </View>
+        <Banner variant="info">
+          Enter the 6-digit code sent to{' '}
+          <Text style={styles.phoneBold}>{phone}</Text>
+        </Banner>
 
         <OtpInput
           value={otp}
@@ -97,7 +90,7 @@ export default function OtpScreen(): React.ReactElement {
           style={styles.otpInput}
         />
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         <Button
           variant="primary"
@@ -105,10 +98,11 @@ export default function OtpScreen(): React.ReactElement {
           loading={isLoading}
           disabled={otp.length < 6}
           onPress={() => void handleVerify(otp)}
-          style={styles.button}
-        >Verify</Button>
+        >
+          Verify
+        </Button>
 
-        <TouchableOpacity
+        <Pressable
           onPress={() => void handleResend()}
           disabled={resendCountdown > 0}
           style={styles.resendRow}
@@ -118,62 +112,33 @@ export default function OtpScreen(): React.ReactElement {
               ? `Resend OTP in ${resendCountdown}s`
               : "Didn't receive the code? Resend"}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#FFFFFF' },
+  flex:      { flex: 1, backgroundColor: colors.bg },
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: spacing.md,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: 40,
+  phoneBold:   { fontWeight: fontWeight.semibold, color: colors.text },
+  otpInput:    { marginVertical: spacing.sm },
+  errorText: {
+    fontSize:   fontSize.sm,
+    color:      colors.danger,
+    textAlign:  'center',
+    marginTop:  -spacing.xs,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  phone: {
-    fontWeight: '600',
-    color: '#111827',
-  },
-  otpInput: {
-    marginBottom: 16,
-  },
-  error: {
-    fontSize: 13,
-    color: '#DC2626',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  button: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  resendRow: {
-    paddingVertical: 8,
-  },
+  resendRow: { alignItems: 'center', paddingVertical: spacing.sm },
   resendText: {
-    fontSize: 14,
-    color: '#2563EB',
-    fontWeight: '500',
+    fontSize:   fontSize.sm,
+    color:      colors.primary,
+    fontWeight: fontWeight.medium,
   },
-  resendDisabled: {
-    color: '#9CA3AF',
-  },
+  resendDisabled: { color: colors.textSec },
 });

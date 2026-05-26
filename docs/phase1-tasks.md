@@ -518,60 +518,60 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 > Swap raw RN components for ui-kit primitives. No new API calls — purely visual.
 > Each screen should use `NavHeader`, `Button` (children pattern), `TextInput`, and theme tokens.
 
-- [ ] **`(auth)/phone.tsx`** — Phone entry
+- [x] **`(auth)/phone.tsx`** — Phone entry
   - Replace header `Text` with `Logo` (size 56) + app name
   - Replace raw `TextInput` with ui-kit `TextInput` (`label="Mobile Number"`, `prefix="🇮🇳 +91"`, `keyboardType="phone-pad"`)
   - Replace `TouchableOpacity` CTA with `Button` variant `primary` fullWidth
   - Apply `colors.surface` page background and `spacing` padding
 
-- [ ] **`(auth)/otp.tsx`** — OTP verify
+- [x] **`(auth)/otp.tsx`** — OTP verify
   - Add `NavHeader` (`title="Verify OTP"`, `onBack`)
   - Wrap `OtpInput` in a centred `View`; pass `error` prop from error state
   - Replace CTA with `Button` (already done) — confirm `disabled={otp.length < 6}`
   - Add `Banner` variant `info` above OTP input: "Enter the 6-digit code sent to {phone}"
   - Resend link: keep as `Pressable` with `colors.primary` text
 
-- [ ] **`(tabs)/index.tsx`** — Agreements list (Home)
+- [x] **`(tabs)/index.tsx`** — Agreements list (Home)
   - Replace hardcoded header `Text` with a `View` showing `Logo` (size 32) + "TrustNest" wordmark inline
   - Wrap `FlatList` in correct padding using `spacing` tokens
   - `AgreementCard` already uses ui-kit — confirm `onPress` navigates to detail
   - Empty state: use `Banner` variant `info` ("No agreements yet. Create your first one.")
   - `FAB` already imported — confirm `bottom={96}` clears tab bar
 
-- [ ] **`(tabs)/profile.tsx`** — Profile
+- [x] **`(tabs)/profile.tsx`** — Profile
   - Replace avatar `View` with `Avatar` component (`name={user.name}`, size 72)
   - Replace KYC status `Text` with `KycBadge` (`state` mapped from `KycStatus` enum)
   - Wrap reputation section in `Card` (`title="Reputation"`)
   - Wrap agreements overview in `Card` (`title="Agreement Overview"`)
   - Replace "Sign Out" `TouchableOpacity` with `Button` variant `secondary` (already done)
 
-- [ ] **`agreement/[id].tsx`** — Agreement detail
+- [x] **`agreement/[id].tsx`** — Agreement detail
   - Add `NavHeader` (`title="Agreement"`, `onBack={router.back}`, `right=<StatusChip>`)
   - Wrap details in `Card` (`title="Lease Details"`) + `InfoRow` for each field
   - Wrap parties section in `Card` (`title="Parties"`) + `InfoRow` rows
   - Action buttons already converted to children pattern — confirm styles use `spacing`
 
-- [ ] **`agreement/create.tsx`** — Create agreement
+- [x] **`agreement/create.tsx`** — Create agreement
   - Add `NavHeader` (`title="New Agreement"`, `onBack`)
   - Add `SectionHeader` before each logical group of inputs (Property, Financials, Dates, Counterparty)
   - All `TextInput` labels already in place — confirm `hint` text on financial fields
   - Buttons already converted — confirm `loading` spinner shows correctly
 
-- [ ] **`agreement/[id]/confirm.tsx`** — Confirm agreement
+- [x] **`agreement/[id]/confirm.tsx`** — Confirm agreement
   - Add `NavHeader` (`title="Review Agreement"`, `onBack`)
   - Wrap each summary block in `Card`
   - Add `Checkbox` + `Banner` variant `warning` disclaimer above CTAs:
     "By confirming you agree to the terms stored on-chain. This action cannot be undone."
   - Buttons already converted
 
-- [ ] **`agreement/[id]/payment.tsx`** — UPI deposit payment
+- [x] **`agreement/[id]/payment.tsx`** — UPI deposit payment
   - Add `NavHeader` (`title="Pay Deposit"`, `onBack`)
   - Add `Banner` variant `info` in idle state: "Your deposit will be locked in a smart-contract escrow until the lease ends."
   - Add `Banner` variant `success` in confirmed state (replace custom card)
   - Add `Banner` variant `warning` in failed state with retry instruction
   - Buttons already converted
 
-- [ ] **`agreement/[id]/dispute.tsx`** — Raise dispute
+- [x] **`agreement/[id]/dispute.tsx`** — Raise dispute
   - Add `NavHeader` (`title="Raise Dispute"`, `onBack`)
   - Add `Banner` variant `danger` at top: "Filing a dispute pauses the escrow. Provide accurate details — false claims affect your reputation score."
   - Add `SectionHeader` above reason `TextInput`
@@ -583,7 +583,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 > Spec: §12b.G. Do this before building new screens so routing is in place.
 
-- [ ] Update `app/(tabs)/_layout.tsx`:
+- [x] Update `app/(tabs)/_layout.tsx`:
   - Change from 2-tab (`index`, `profile`) to 4-tab layout:
     - Tab 1 `index` → **Home** (agreements list) — existing
     - Tab 2 `browse/index` → **Discover** — new (see below)
@@ -592,14 +592,14 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - Replace emoji `TabIcon` with imported ui-kit `TabBar` SVG icons (or keep emoji for now and swap in Phase E)
   - Bottom tab bar height: ensure `FAB` `bottom={96}` still clears it
 
-- [ ] Create `app/(tabs)/browse/index.tsx` — **Discover tab shell**
+- [x] Create `app/(tabs)/browse/index.tsx` — **Discover tab shell**
   - Read `user.role` from auth store
   - `TENANT` → render `<BrowseScreen />`
   - `OWNER` → render `<MyPropertiesScreen />`
   - `BOTH` → segmented control at top: "Browse" / "My Properties"; toggles between both
   - Both sub-screens are stubs (`<View><Text>Coming soon</Text></View>`) until Phase D/E
 
-- [ ] Create `app/(tabs)/notifications/index.tsx` — **Alerts tab placeholder**
+- [x] Create `app/(tabs)/notifications/index.tsx` — **Alerts tab placeholder**
   - Empty state `Banner` variant `info`: "Push notifications will appear here."
 
 ---
@@ -609,7 +609,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 > These slot into the existing auth flow. Build in the order shown — each screen feeds into the next.
 
 #### C1. Profile completion (§12a.F)
-- [ ] Create `app/(auth)/complete-profile.tsx` — **Profile completion screen**
+- [x] Create `app/(auth)/complete-profile.tsx` — **Profile completion screen**
   - `NavHeader` (`title="Complete Your Profile"`) — no back button (required step)
   - `TextInput` for full legal name
   - `SectionHeader` "Your Role"
@@ -619,12 +619,12 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - `Button` variant `primary` fullWidth "Continue" → `POST /auth/complete-profile` or extended `POST /auth/verify-otp`
   - `ProgressBar` step={1} total={2} at the top (Step 1 of 2: Profile, Step 2: Verification)
 
-- [ ] Update `app/(auth)/otp.tsx` — after successful verify, check if `name + role + dob` set:
+- [x] Update `app/(auth)/otp.tsx` — after successful verify, check if `name + role + dob` set:
   - If not → `router.replace('/(auth)/complete-profile')`
   - If yes → `router.replace('/(tabs)')`
 
 #### C2. KYC entry screen (§12a.G)
-- [ ] Create `app/(auth)/kyc/index.tsx` — **KYC entry screen**
+- [x] Create `app/(auth)/kyc/index.tsx` — **KYC entry screen**
   - `NavHeader` (`title="Verify Your Identity"`, `onBack`)
   - `Banner` variant `info`: "Required to create or confirm a rental agreement."
   - Two `SelectableCard`s:
@@ -633,7 +633,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - `Button` variant `primary` fullWidth "Continue" → navigates to selected path
 
 #### C3. Aadhaar verification (§12a.G)
-- [ ] Create `app/(auth)/kyc/aadhaar.tsx` — **Aadhaar verification screen**
+- [x] Create `app/(auth)/kyc/aadhaar.tsx` — **Aadhaar verification screen**
   - `ProgressBar` step={1} total={2} ("Step 1 of 2: Enter Aadhaar")
   - Step 1 — Aadhaar number input:
     - `TextInput` label="Aadhaar Number" maxLength={12} keyboardType="number-pad"
@@ -646,7 +646,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
     - `Button` "Verify" → `POST /users/me/kyc/aadhaar/verify`; on success → `router.push('/(auth)/kyc/selfie')`
 
 #### C4. PAN verification (§12a.G)
-- [ ] Create `app/(auth)/kyc/pan.tsx` — **PAN card screen**
+- [x] Create `app/(auth)/kyc/pan.tsx` — **PAN card screen**
   - `TextInput` label="PAN Number" hint="e.g. ABCDE1234F" `autoCapitalize="characters"` `maxLength={10}`
   - Inline regex validation error if format invalid
   - Image upload area (camera icon + "Upload PAN card photo")
@@ -654,7 +654,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - On submit: replace form with `Banner` variant `info` "Your PAN is under review — we'll notify you within 24 hours."
 
 #### C5. Selfie / liveness (§12a.G)
-- [ ] Create `app/(auth)/kyc/selfie.tsx` — **Selfie screen**
+- [x] Create `app/(auth)/kyc/selfie.tsx` — **Selfie screen**
   - `NavHeader` (`title="Take a Selfie"`)
   - Camera preview placeholder with oval face-guide overlay (use `View` with `borderRadius` for now; replace with camera SDK later)
   - Instructions text: "Look directly at the camera in good lighting"
@@ -663,14 +663,14 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - On failure → `Banner` variant `danger` showing `kycRejectionReason` + "Try Again" CTA
 
 #### C6. KYC rejected screen (§12a.G)
-- [ ] Create `app/(auth)/kyc/rejected.tsx` — **KYC rejected screen**
+- [x] Create `app/(auth)/kyc/rejected.tsx` — **KYC rejected screen**
   - `NavHeader` (`title="Verification Failed"`)
   - `Banner` variant `danger` showing the `kycRejectionReason` text
   - `SelectableCard` "Retry selfie" + `SelectableCard` "Switch to PAN" (if currently on Aadhaar path)
   - `Button` "Try again" navigates back to the appropriate step
 
 #### C7. Payment details screen (§12a.H)
-- [ ] Create `app/(auth)/payment-details.tsx` — **Payment details screen**
+- [x] Create `app/(auth)/payment-details.tsx` — **Payment details screen**
   - `NavHeader` (`title="Payment Details"`, `onBack`)
   - `Banner` variant `info`: "Required to pay or receive rental deposits."
   - Segmented control / two `SelectableCard`s: "UPI ID" / "Bank Account"
@@ -684,36 +684,36 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - On success → `Banner` variant `success` "Payment details saved" + navigate back
 
 #### C8. Progressive gate bottom sheets (§12a.I)
-- [ ] Create `components/sheets/KycRequiredSheet.tsx`
+- [x] Create `components/sheets/KycRequiredSheet.tsx`
   - `Banner` variant `warning` title="KYC Required"
   - Body: "Verify your identity to continue. Takes 2 minutes."
   - `Button` "Verify Now" → `router.push('/(auth)/kyc')`
   - Shown via a `Modal` or `BottomSheet`
 
-- [ ] Create `components/sheets/PaymentDetailsRequiredSheet.tsx`
+- [x] Create `components/sheets/PaymentDetailsRequiredSheet.tsx`
   - `Banner` variant `warning` title="Payment Details Required"
   - Body: "Add a UPI ID or bank account to pay."
   - `Button` "Add Payment Details" → `router.push('/(auth)/payment-details')`
 
-- [ ] Create `components/sheets/ProfileIncompleteSheet.tsx`
+- [x] Create `components/sheets/ProfileIncompleteSheet.tsx`
   - `Banner` variant `warning` title="Complete Your Profile"
   - Body: "Add your name, role, and date of birth to continue."
   - `Button` "Complete Profile" → `router.push('/(auth)/complete-profile')`
 
-- [ ] Wire gate sheets to API error responses:
+- [x] Wire gate sheets to API error responses:
   - In all API call sites: intercept `403` with `code: 'KYC_REQUIRED'` → show `KycRequiredSheet`
   - `code: 'PAYMENT_DETAILS_REQUIRED'` → show `PaymentDetailsRequiredSheet`
   - `code: 'PROFILE_INCOMPLETE'` → show `ProfileIncompleteSheet`
 
 #### C9. Profile screen — verification & payment sections (§12a.J)
-- [ ] Add "Verification" `Card` section to `profile.tsx`:
+- [x] Add "Verification" `Card` section to `profile.tsx`:
   - `InfoRow` "Aadhaar" → `KycBadge` state derived from `kycStatus + kycMethod`
   - `InfoRow` "Selfie" → ✅ / pending text
   - Show masked identifier (e.g. `•••• •••• 1234`) below the badge
-- [ ] Add "Payment Details" `Card` section to `profile.tsx`:
+- [x] Add "Payment Details" `Card` section to `profile.tsx`:
   - `InfoRow` showing masked UPI ID or `••••` + last 4 of account number
   - "Edit" ghost `Button` as `right` prop on `NavHeader` or inline CTA
-- [ ] Add inline `Banner` variant `warning` for incomplete tiers:
+- [x] Add inline `Banner` variant `warning` for incomplete tiers:
   - If `kycStatus !== VERIFIED`: "Complete KYC to create agreements →"
   - If no payment details: "Add payment details to enable deposits →"
   - Each banner has a `Pressable` wrapper that navigates to the relevant screen
@@ -725,46 +725,46 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 > Add to `packages/ui-kit/src/components/` and export from `index.ts`.
 > Run `turbo run typecheck --filter=@trustnest/ui-kit` after each component.
 
-- [ ] **`PropertyCard.tsx`**
+- [x] **`PropertyCard.tsx`**
   - Props: `title`, `locality`, `city`, `bhkType`, `furnishingStatus`, `monthlyRentINR`, `depositINR`, `ownerName`, `ownerScore`, `isPrimary` image URL, `status: PropertyStatus`, `onPress`
   - Cover image (aspect 16:9) with `StatusChip`-style pill overlay for property status
   - BHK + furnishing chips using `colors.surface` background
   - Rent prominently in `fontSize.base` semibold; deposit in `fontSize.sm` textSec
   - Owner strip at bottom: `Avatar` (size 28) + name + `ReputationBadge` compact stars
 
-- [ ] **`PhotoGallery.tsx`**
+- [x] **`PhotoGallery.tsx`**
   - Props: `images: string[]`, `onImagePress?: (index) => void`
   - Full-width `ScrollView` horizontal paging (or `FlatList` with `pagingEnabled`)
   - Dot indicators below; image count badge top-right ("3 / 10")
   - Aspect ratio 4:3
 
-- [ ] **`FilterBar.tsx`**
+- [x] **`FilterBar.tsx`**
   - Props: `filters: FilterOption[]`, `selected: string[]`, `onFilterChange`
   - Horizontal `ScrollView` (no scroll indicator) of pill chips
   - Selected chip: `colors.primary` bg + white text
   - Unselected: `colors.surface` bg + `colors.text` text
 
-- [ ] **`InterestStatusChip.tsx`**
+- [x] **`InterestStatusChip.tsx`**
   - Props: `status: InterestStatus`
   - `PENDING` → warning yellow; `ACCEPTED` → success green; `DECLINED` → danger red; `WITHDRAWN` → grey
   - Same visual pattern as `StatusChip` (dot + label + pill shape)
 
-- [ ] **`TenantSummaryCard.tsx`**
+- [x] **`TenantSummaryCard.tsx`**
   - Props: `tenantName`, `score`, `reviews`, `kycStatus`, `message?`, `onAccept`, `onDecline`, `isLoading?`
   - Left: `Avatar` (size 48) + name + `KycBadge`
   - Stars row using `ReputationBadge` compact mode
   - Optional `message` text block in `colors.surface` bg
   - Two CTAs: `Button` "Accept" variant `primary` + `Button` "Decline" variant `secondary`
 
-- [ ] Update `packages/ui-kit/src/index.ts` with all 5 new exports
-- [ ] Run `turbo run typecheck --filter=@trustnest/ui-kit` — zero errors
+- [x] Update `packages/ui-kit/src/index.ts` with all 5 new exports
+- [x] Run `turbo run typecheck --filter=@trustnest/ui-kit` — zero errors
 
 ---
 
 ### Phase E — Property marketplace screens (spec: §12b.H–J)
 
 #### E1. Browse / Search screen (§12b.H) — tenant-facing
-- [ ] Create `app/(tabs)/browse/index.tsx` — **Browse screen** (replaces stub from Phase B)
+- [x] Create `app/(tabs)/browse/index.tsx` — **Browse screen** (replaces stub from Phase B)
   - `NavHeader` (`title="Discover"`, no back button — it's a tab)
   - Search bar: `TextInput` placeholder="Search city or locality…"
   - `FilterBar` below search with chips: BHK types, rent ranges (< ₹15k, ₹15–30k, > ₹30k), furnishing
@@ -773,7 +773,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - Empty state: `Banner` variant `info` "No properties found — try adjusting your filters"
   - API: `GET /properties?city=&bhkType=&minRent=&maxRent=&page=`
 
-- [ ] Create `app/property/[id].tsx` — **Property detail screen** (§12b.H)
+- [x] Create `app/property/[id].tsx` — **Property detail screen** (§12b.H)
   - `NavHeader` (`title=""`, `onBack`) — title shown below header
   - `PhotoGallery` full-width at top (images from property)
   - Property title in `fontSize.xl` semibold
@@ -788,14 +788,14 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
     - `ACCEPTED` interest → `Button` "View Agreement" navigates to agreement detail
   - API: `GET /properties/:id` + `POST /properties/:id/interest`
 
-- [ ] Create `app/interests/index.tsx` — **My Interests screen** (§12b.H)
+- [x] Create `app/interests/index.tsx` — **My Interests screen** (§12b.H)
   - `NavHeader` (`title="My Interests"`)
   - `FlatList` of `PropertyCard` + `InterestStatusChip` pairs
   - Tap → navigate to `/property/[id]`
   - API: `GET /users/me/interests`
 
 #### E2. My Properties screens (§12b.I) — owner-facing
-- [ ] Create `app/(tabs)/browse/my-properties.tsx` — **My Properties screen**
+- [x] Create `app/(tabs)/browse/my-properties.tsx` — **My Properties screen**
   - `NavHeader` (`title="My Properties"`)
   - `FlatList` of `PropertyCard` with owner-facing status chips (Draft / Active / Paused / Rented)
   - `FAB` "+" → navigates to `/my-properties/create` (Step 1 of add flow)
@@ -803,7 +803,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - Empty state: `Banner` variant `info` "List your first property to start receiving tenant requests."
   - API: `GET /properties?ownerId=me`
 
-- [ ] Create `app/my-properties/[id]/index.tsx` — **Property Management screen** (§12b.I)
+- [x] Create `app/my-properties/[id]/index.tsx` — **Property Management screen** (§12b.I)
   - `NavHeader` (`title="Manage Property"`, `onBack`, right = `Button` "Edit" ghost)
   - `PropertyCard` preview (read-only, full detail)
   - `Card` "Interested Tenants": count badge + `Button` "View requests" → navigates to interests screen
@@ -811,7 +811,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - `Button` "Delete Listing" variant `destructive` (shown only if `status !== RENTED`)
   - Confirm delete: inline `Banner` variant `danger` with second "Confirm Delete" CTA
 
-- [ ] Create `app/my-properties/[id]/interests.tsx` — **Interest Requests screen** (§12b.I)
+- [x] Create `app/my-properties/[id]/interests.tsx` — **Interest Requests screen** (§12b.I)
   - `NavHeader` (`title="Interested Tenants"`, `onBack`)
   - `FlatList` of `TenantSummaryCard` components
   - Accept → confirmation `Banner` variant `warning` inline: "Accepting will decline all other requests and create a draft agreement." + "Confirm Accept" CTA → `POST /properties/:id/interests/:interestId/accept` → navigate to new agreement detail
@@ -820,7 +820,7 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
   - API: `GET /properties/:id/interests`
 
 #### E3. Add / Edit Property flow (§12b.J) — owner-facing, multi-step
-- [ ] Create `app/my-properties/create.tsx` — **Multi-step property form**
+- [x] Create `app/my-properties/create.tsx` — **Multi-step property form**
   - Local state stores all 6 steps; navigating back doesn't clear data (`useRef` or `zustand` slice)
   - `ProgressBar` `step={currentStep}` `total={6}` pinned below `NavHeader`
 
@@ -870,12 +870,12 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ### Phase F — Typecheck & smoke test pass
 
-- [ ] Run `turbo run typecheck` across all packages — zero errors
-- [ ] Start Expo Go on device/simulator: walk through every screen manually
-- [ ] Verify `Banner` gate sheets appear correctly for each 403 code
-- [ ] Verify FAB clears the 4-tab bar on all screens that use it
-- [ ] Verify `ProgressBar` shows correct step on all multi-step flows
-- [ ] Mark §13 Testing & QA items as ready to run
+- [x] Run `turbo run typecheck` across all packages — zero errors
+- [x] Start Expo Go on device/simulator: walk through every screen manually
+- [x] Verify `Banner` gate sheets appear correctly for each 403 code
+- [x] Verify FAB clears the 4-tab bar on all screens that use it
+- [x] Verify `ProgressBar` shows correct step on all multi-step flows
+- [x] Mark §13 Testing & QA items as ready to run
 
 ---
 

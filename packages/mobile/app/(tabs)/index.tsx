@@ -9,15 +9,15 @@ import {
   RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
-import { AgreementCard, Button } from '@trustnest/ui-kit';
+import {
+  AgreementCard, Banner, FAB,
+  colors, spacing, fontSize, fontWeight,
+} from '@trustnest/ui-kit';
 import { UserRole } from '@trustnest/shared';
 import { useAgreements } from '@/hooks/useAgreements';
 import { useAuth } from '@/store/auth.store';
 import type { Agreement } from '@/types/api';
 
-/**
- * Home screen — shows the authenticated user's agreements list.
- */
 export default function HomeScreen(): React.ReactElement {
   const { state } = useAuth();
   const { agreements, isLoading, error, refresh, loadMore } = useAgreements();
@@ -57,11 +57,9 @@ export default function HomeScreen(): React.ReactElement {
         <Text style={styles.emptySubtitle}>
           Create your first rental agreement to get started.
         </Text>
-        <Button
-          variant="primary"
-          onPress={() => router.push('/agreement/create')}
-          style={styles.emptyButton}
-        >Create Agreement</Button>
+        <Banner variant="info">
+          Tap the + button below or browse properties in the Discover tab.
+        </Banner>
       </View>
     );
   };
@@ -87,109 +85,58 @@ export default function HomeScreen(): React.ReactElement {
         ListEmptyComponent={<ListEmpty />}
         ListHeaderComponent={
           isLoading && agreements.length === 0 ? (
-            <ActivityIndicator color="#2563EB" style={styles.loader} />
+            <ActivityIndicator color={colors.primary} style={styles.loader} />
           ) : null
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} tintColor="#2563EB" />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void handleRefresh()}
+            tintColor={colors.primary}
+          />
         }
         onEndReached={() => void loadMore()}
         onEndReachedThreshold={0.3}
       />
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/agreement/create')}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      <FAB onPress={() => router.push('/agreement/create')} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  container:  { flex: 1, backgroundColor: colors.surface },
   list: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingBottom: 100,
+    paddingHorizontal: spacing.base,
+    paddingVertical:   spacing.base,
+    paddingBottom:     100,
     flexGrow: 1,
   },
-  card: {
-    marginBottom: 12,
-  },
-  loader: {
-    marginTop: 32,
-  },
+  card:       { marginBottom: spacing.sm },
+  loader:     { marginTop: spacing.xl },
   centeredContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg,
   },
-  errorText: {
-    color: '#DC2626',
-    fontSize: 15,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  retryText: {
-    color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  errorText:  { color: colors.danger, fontSize: fontSize.base, textAlign: 'center', marginBottom: spacing.sm },
+  retryText:  { color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.medium },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 80,
-    paddingHorizontal: 32,
+    paddingTop:       spacing['2xl'],
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
   },
-  emptyEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
+  emptyEmoji:    { fontSize: 56 },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
+    fontSize:   fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color:      colors.text,
   },
   emptySubtitle: {
-    fontSize: 15,
-    color: '#6B7280',
+    fontSize:  fontSize.base,
+    color:     colors.textSec,
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
-  },
-  emptyButton: {
-    minWidth: 200,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 32,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabIcon: {
-    fontSize: 30,
-    color: '#FFFFFF',
-    lineHeight: 34,
-    marginTop: -2,
   },
 });

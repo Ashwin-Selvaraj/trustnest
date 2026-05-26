@@ -5,22 +5,23 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Button } from '@trustnest/ui-kit';
+import {
+  NavHeader, Card, Banner, Checkbox, Button, InfoRow, SectionHeader,
+  colors, spacing, fontSize, fontWeight,
+} from '@trustnest/ui-kit';
 import { agreementsApi } from '@/api/agreements';
 import { ApiError } from '@/api/client';
 import type { Agreement } from '@/types/api';
 
-/**
- * Confirm agreement screen — shows a summary and asks the user to confirm.
- * Both parties must confirm before the NFT is minted and deposit becomes payable.
- */
 export default function ConfirmAgreementScreen(): React.ReactElement {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [agreement, setAgreement] = React.useState<Agreement | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [agreement, setAgreement]   = React.useState<Agreement | null>(null);
+  const [isLoading, setIsLoading]   = React.useState(true);
   const [isConfirming, setIsConfirming] = React.useState(false);
+  const [agreed, setAgreed]         = React.useState(false);
 
   React.useEffect(() => {
     if (!id) return;
@@ -54,127 +55,79 @@ export default function ConfirmAgreementScreen(): React.ReactElement {
   if (isLoading || !agreement) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.loadingText}>Loading…</Text>
+        <ActivityIndicator color={colors.primary} size="large" />
       </View>
     );
   }
 
   const formatDate = (d: string): string =>
     new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const formatINR = (n: number): string => `₹${n.toLocaleString('en-IN')}`;
+  const fmt = (n: number): string => `₹${n.toLocaleString('en-IN')}`;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Agreement Summary</Text>
+    <View style={styles.container}>
+      <NavHeader title="Review Agreement" onBack={() => router.back()} />
 
-        <SummaryRow label="Property" value={agreement.propertyAddress} multiline />
-        <Divider />
-        <SummaryRow label="Tenant" value={agreement.tenantName} />
-        <SummaryRow label="Owner" value={agreement.ownerName} />
-        <Divider />
-        <SummaryRow label="Monthly Rent" value={formatINR(agreement.rentINR)} />
-        <SummaryRow label="Security Deposit" value={formatINR(agreement.depositINR)} />
-        <Divider />
-        <SummaryRow label="Start" value={formatDate(agreement.startDate)} />
-        <SummaryRow label="End" value={formatDate(agreement.endDate)} />
-      </View>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Summary card */}
+        <Card style={styles.card}>
+          <SectionHeader>Agreement Summary</SectionHeader>
 
-      <View style={styles.disclaimer}>
-        <Text style={styles.disclaimerText}>
-          By confirming, you agree to the terms of this rental agreement. The security deposit of{' '}
-          <Text style={styles.bold}>{formatINR(agreement.depositINR)}</Text> will be held in a
-          smart contract escrow on the Polygon blockchain until the agreement ends or a dispute is
-          resolved.
-        </Text>
-      </View>
+          <Text style={styles.address} numberOfLines={2}>{agreement.propertyAddress}</Text>
 
-      <Button
-        variant="primary"
-        fullWidth
-        loading={isConfirming}
-        onPress={() => void handleConfirm()}
-      >Confirm Agreement</Button>
-      <Button
-        variant="secondary"
-        fullWidth
-        onPress={() => router.back()}
-      >Go Back</Button>
-    </ScrollView>
-  );
-}
+          <InfoRow label="Tenant"  value={agreement.tenantName} />
+          <InfoRow label="Owner"   value={agreement.ownerName} />
+          <InfoRow label="Monthly Rent"     value={fmt(agreement.rentINR)}    highlight />
+          <InfoRow label="Security Deposit" value={fmt(agreement.depositINR)} />
+          <InfoRow label="Start"   value={formatDate(agreement.startDate)} />
+          <InfoRow label="End"     value={formatDate(agreement.endDate)} />
+        </Card>
 
-function SummaryRow({
-  label,
-  value,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  multiline?: boolean;
-}): React.ReactElement {
-  return (
-    <View style={[styles.summaryRow, multiline && styles.summaryRowColumn]}>
-      <Text style={styles.summaryLabel}>{label}</Text>
-      <Text style={[styles.summaryValue, multiline && styles.summaryValueFull]}>{value}</Text>
+        {/* Disclaimer */}
+        <Banner variant="warning">
+          By confirming, you agree to the terms stored on-chain. The security deposit of{' '}
+          <Text style={styles.bold}>{fmt(agreement.depositINR)}</Text> will be held in a
+          smart contract escrow on Polygon until the agreement ends or a dispute is resolved.
+          This action cannot be undone.
+        </Banner>
+
+        {/* Checkbox consent */}
+        <Checkbox checked={agreed} onChange={setAgreed}>
+          I understand and agree to the terms above
+        </Checkbox>
+
+        {/* Actions */}
+        <View style={styles.buttons}>
+          <Button
+            variant="primary"
+            fullWidth
+            loading={isConfirming}
+            disabled={!agreed}
+            onPress={() => void handleConfirm()}
+          >
+            Confirm Agreement
+          </Button>
+          <Button variant="secondary" fullWidth onPress={() => router.back()}>
+            Go Back
+          </Button>
+        </View>
+      </ScrollView>
     </View>
   );
 }
 
-function Divider(): React.ReactElement {
-  return <View style={styles.divider} />;
-}
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  content: { padding: 16, gap: 16, paddingBottom: 48 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { color: '#6B7280' },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    gap: 10,
+  container:  { flex: 1, backgroundColor: colors.surface },
+  centered:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  content:    { padding: spacing.base, gap: spacing.base, paddingBottom: spacing['2xl'] },
+  card:       { gap: spacing.sm },
+  address: {
+    fontSize:   fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color:      colors.text,
+    lineHeight: 22,
+    marginBottom: spacing.xs,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 2,
-  },
-  summaryRowColumn: {
-    flexDirection: 'column',
-    gap: 4,
-  },
-  summaryLabel: { fontSize: 14, color: '#6B7280', flex: 1 },
-  summaryValue: {
-    fontSize: 14,
-    color: '#111827',
-    fontWeight: '500',
-    textAlign: 'right',
-    flex: 2,
-  },
-  summaryValueFull: { textAlign: 'left', flex: 1 },
-  divider: { height: 1, backgroundColor: '#F3F4F6' },
-  disclaimer: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  disclaimerText: {
-    fontSize: 13,
-    color: '#1E40AF',
-    lineHeight: 20,
-  },
-  bold: { fontWeight: '700' },
+  bold:       { fontWeight: fontWeight.bold },
+  buttons:    { gap: spacing.sm },
 });

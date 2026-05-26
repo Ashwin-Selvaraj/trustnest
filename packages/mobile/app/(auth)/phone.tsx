@@ -8,13 +8,13 @@ import {
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Button, TextInput } from '@trustnest/ui-kit';
+import {
+  Button, TextInput, Logo,
+  colors, spacing, fontSize, fontWeight,
+} from '@trustnest/ui-kit';
 import { authApi } from '@/api/auth';
 import { ApiError } from '@/api/client';
 
-/**
- * Phone number entry screen — step 1 of the OTP auth flow.
- */
 export default function PhoneScreen(): React.ReactElement {
   const [phone, setPhone] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
@@ -26,7 +26,6 @@ export default function PhoneScreen(): React.ReactElement {
       setError('Enter a valid 10-digit Indian mobile number');
       return;
     }
-
     setIsLoading(true);
     setError(null);
     try {
@@ -45,11 +44,13 @@ export default function PhoneScreen(): React.ReactElement {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        {/* Logo / Branding */}
+        {/* Branding */}
         <View style={styles.hero}>
-          <Text style={styles.logo}>🏠</Text>
-          <Text style={styles.title}>TrustNest</Text>
-          <Text style={styles.subtitle}>Transparent rental agreements{'\n'}powered by blockchain</Text>
+          <Logo size={72} />
+          <Text style={styles.appName}>TrustNest</Text>
+          <Text style={styles.tagline}>
+            Transparent rental agreements{'\n'}powered by blockchain
+          </Text>
         </View>
 
         {/* Form */}
@@ -74,8 +75,9 @@ export default function PhoneScreen(): React.ReactElement {
             fullWidth
             loading={isLoading}
             onPress={() => void handleSendOtp()}
-            style={styles.button}
-          >Send OTP</Button>
+          >
+            Send OTP
+          </Button>
         </View>
 
         <Text style={styles.disclaimer}>
@@ -87,44 +89,38 @@ export default function PhoneScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#FFFFFF' },
+  flex:      { flex: 1, backgroundColor: colors.bg },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 40,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.xl,
   },
   hero: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: spacing['2xl'],
+    gap: spacing.sm,
   },
-  logo: {
-    fontSize: 64,
-    marginBottom: 12,
+  appName: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginTop: spacing.xs,
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#6B7280',
+  tagline: {
+    fontSize: fontSize.base,
+    color: colors.textSec,
     textAlign: 'center',
     lineHeight: 22,
   },
   form: {
-    gap: 16,
-  },
-  button: {
-    marginTop: 8,
+    gap: spacing.md,
   },
   disclaimer: {
-    fontSize: 12,
-    color: '#9CA3AF',
+    fontSize: fontSize.xs,
+    color: colors.textSec,
     textAlign: 'center',
-    marginTop: 32,
+    marginTop: spacing.lg,
     lineHeight: 18,
   },
 });
