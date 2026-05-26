@@ -7,6 +7,7 @@ import { Wallet } from '../blockchain/wallet.entity';
 import { ReputationToken } from '../reputation/reputation-token.entity';
 import { User } from '../users/user.entity';
 import { BlockchainModule } from '../blockchain/blockchain.module';
+import { RequiresKycGuard } from '../common/guards/requires-kyc.guard';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
     BlockchainModule,
   ],
   controllers: [AgreementsController],
-  providers: [AgreementsService],
+  providers: [AgreementsService, RequiresKycGuard],
   exports: [AgreementsService],
 })
 export class AgreementsModule {}

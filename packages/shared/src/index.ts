@@ -1,6 +1,8 @@
 export {
   UserRole,
   KycStatus,
+  KycMethod,
+  PaymentDetailsStatus,
   AgreementStatus,
   PaymentType,
   PaymentStatus,

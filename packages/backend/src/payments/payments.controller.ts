@@ -1,6 +1,6 @@
 import {
   Controller, Post, Get, Body, Param, Req, Headers,
-  HttpCode, HttpStatus, RawBodyRequest,
+  HttpCode, HttpStatus, RawBodyRequest, UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
@@ -8,6 +8,7 @@ import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { ReleaseDto } from './dto/release.dto';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { Public } from '../common/decorators/public.decorator';
+import { RequiresPaymentDetailsGuard } from '../common/guards/requires-payment-details.guard';
 
 @Controller()
 export class PaymentsController {
@@ -15,6 +16,7 @@ export class PaymentsController {
 
   @Post('payments/initiate')
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RequiresPaymentDetailsGuard)
   initiatePayment(@Req() req: Request, @Body() dto: InitiatePaymentDto) {
     const user = req.user as JwtPayload;
     return this.paymentsService.initiatePayment(dto.agreementId, user.sub);

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Body, Param, Query, Req,
-  DefaultValuePipe, ParseIntPipe, HttpCode, HttpStatus,
+  DefaultValuePipe, ParseIntPipe, HttpCode, HttpStatus, UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { AgreementsService } from './agreements.service';
@@ -9,6 +9,7 @@ import { DisputeDto } from './dto/dispute.dto';
 import { RateDto } from './dto/rate.dto';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { AgreementStatus } from '@trustnest/shared';
+import { RequiresKycGuard } from '../common/guards/requires-kyc.guard';
 
 @Controller('agreements')
 export class AgreementsController {
@@ -16,6 +17,7 @@ export class AgreementsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(RequiresKycGuard)
   create(@Body() dto: CreateAgreementDto) {
     return this.agreementsService.create(dto);
   }
@@ -38,6 +40,7 @@ export class AgreementsController {
   }
 
   @Post(':id/confirm')
+  @UseGuards(RequiresKycGuard)
   confirm(@Req() req: Request, @Param('id') id: string) {
     const user = req.user as JwtPayload;
     return this.agreementsService.confirm(id, user.sub);

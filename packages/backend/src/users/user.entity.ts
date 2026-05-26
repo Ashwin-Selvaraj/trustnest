@@ -2,7 +2,7 @@ import {
   Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,
   OneToOne, OneToMany,
 } from 'typeorm';
-import { UserRole, KycStatus } from '@trustnest/shared';
+import { UserRole, KycStatus, KycMethod } from '@trustnest/shared';
 
 @Entity('users')
 export class User {
@@ -18,11 +18,26 @@ export class User {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.TENANT })
   role!: UserRole;
 
+  @Column({ type: 'date', nullable: true })
+  dob!: Date | null;
+
   @Column({ type: 'enum', enum: KycStatus, default: KycStatus.PENDING })
   kycStatus!: KycStatus;
 
   @Column({ nullable: true, length: 50, type: 'varchar' })
   kycJobId!: string | null;
+
+  @Column({ type: 'enum', enum: KycMethod, nullable: true })
+  kycMethod!: KycMethod | null;
+
+  @Column({ nullable: true, length: 10, type: 'varchar' })
+  maskedAadhaar!: string | null;
+
+  @Column({ nullable: true, length: 15, type: 'varchar' })
+  maskedPan!: string | null;
+
+  @Column({ nullable: true, type: 'text' })
+  kycRejectionReason!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
