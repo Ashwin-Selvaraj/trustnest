@@ -210,21 +210,21 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 > Replace the single `POST /users/me/kyc` (file upload only) with a proper two-path KYC flow.
 
 #### Aadhaar path (preferred — instant, OTP-based)
-- [x] `POST /users/me/kyc/aadhaar/init` — accepts `aadhaarNumber`; calls UIDAI / DigiLocker API to send OTP to Aadhaar-linked mobile; returns `sessionId`
-- [x] `POST /users/me/kyc/aadhaar/verify` — accepts `sessionId` + `otp`; on success stores `maskedAadhaar` (last 4 digits), sets `kycMethod = AADHAAR`, advances `kycStatus` to `PENDING` (selfie still required)
+- [ ] `POST /users/me/kyc/aadhaar/init` — accepts `aadhaarNumber`; calls UIDAI / DigiLocker API to send OTP to Aadhaar-linked mobile; returns `sessionId` *(currently: in-memory stub OTP — does NOT call real provider; see §12d)*
+- [ ] `POST /users/me/kyc/aadhaar/verify` — accepts `sessionId` + `otp`; on success stores `maskedAadhaar` (last 4 digits), sets `kycMethod = AADHAAR`, advances `kycStatus` to `PENDING` (selfie still required) *(currently: validates against stub OTP only; see §12d)*
 - [x] Mask Aadhaar before persisting — store only last 4 digits; full number never written to DB
 
 #### PAN path (fallback — async, document upload)
-- [x] `POST /users/me/kyc/pan` — accepts `panNumber` + PAN card image (multipart); uploads image to S3; calls KYC provider API (e.g. Karza / IDfy); returns `jobId`; sets `kycStatus = PENDING`
-- [x] KYC provider webhook — on callback, store `maskedPan`, set `kycMethod = PAN`; advance to `PENDING_SELFIE` or `VERIFIED` depending on whether selfie is also required by provider
+- [ ] `POST /users/me/kyc/pan` — accepts `panNumber` + PAN card image (multipart); uploads image to S3; calls KYC provider API (e.g. Karza / IDfy); returns `jobId`; sets `kycStatus = PENDING` *(currently: stub — no S3 upload, no API call; see §12d)*
+- [ ] KYC provider webhook — on callback, store `maskedPan`, set `kycMethod = PAN`; advance to `PENDING_SELFIE` or `VERIFIED` depending on whether selfie is also required by provider *(currently: `handleKycWebhook` exists but no HMAC validation or real provider; see §12d)*
 - [x] Validate PAN format server-side (`/^[A-Z]{5}[0-9]{4}[A-Z]$/`) before calling provider
 
 #### Selfie / liveness (required for both paths)
-- [x] `POST /users/me/kyc/selfie` — accepts selfie image (multipart); calls liveness-check API (e.g. Hyperverge / IDfy); on pass sets `kycStatus = VERIFIED`; on fail sets `kycStatus = REJECTED` with rejection reason stored in `kycRejectionReason` column
+- [ ] `POST /users/me/kyc/selfie` — accepts selfie image (multipart); calls liveness-check API (e.g. Hyperverge / IDfy); on pass sets `kycStatus = VERIFIED`; on fail sets `kycStatus = REJECTED` with rejection reason stored in `kycRejectionReason` column *(currently: stub — auto-approves all selfies; see §12d)*
 - [x] Add `kycRejectionReason: string | null` column to `User` entity
 
 #### Payment details
-- [x] `POST /users/me/payment-details` — accepts `upiId` OR `{ bankAccountNumber, bankIfsc }`; for bank accounts, verify via penny-drop (Razorpay / Cashfree); sets `status = VERIFIED`
+- [ ] `POST /users/me/payment-details` — accepts `upiId` OR `{ bankAccountNumber, bankIfsc }`; for bank accounts, verify via penny-drop (Razorpay / Cashfree); sets `status = VERIFIED` *(currently: bank accounts set to `PENDING_VERIFICATION` with no real penny-drop call; see §12d)*
 - [x] `GET /users/me/payment-details` — return masked payment details (`upiId` as-is; account number masked to last 4 digits)
 - [x] `DELETE /users/me/payment-details` — remove and reset status to `NONE`
 - [x] `GET /users/me` — update response to include `profileComplete: boolean`, `kycStatus`, `kycMethod`, `paymentDetailsStatus`
@@ -876,6 +876,115 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 - [x] Verify FAB clears the 4-tab bar on all screens that use it
 - [x] Verify `ProgressBar` shows correct step on all multi-step flows
 - [x] Mark §13 Testing & QA items as ready to run
+
+---
+
+## 12d. KYC Provider Integration (Sandbox.co.in / Digio)
+
+> **Architecture rule (non-negotiable):** The mobile app NEVER calls any KYC provider directly.
+> All KYC API calls flow through our own backend: `React Native → TrustNest backend → KYC provider`.
+> API keys are backend-only env vars. The frontend only sees sanitised status responses.
+> Switching providers in production requires only backend `.env` changes — zero frontend changes.
+
+> **Provider strategy:**
+> - **Development / sandbox:** [Sandbox.co.in](https://sandbox.co.in) — free sandbox with Aadhaar OTP (real UIDAI gateway), PAN verification, DigiLocker, bank penny-drop APIs
+> - **Production KYC + Aadhaar eSign:** [Digio](https://www.digio.in) — bundles KYC + Aadhaar eSign in one integration; covers both identity verification and the "Confirm & Sign" agreement flow
+> - Provider-switching requires only backend `.env` changes; mobile app is unaffected
+
+### A. Environment variables & config
+
+- [ ] Add `KYC_PROVIDER` env var: `sandbox` | `digio` | `stub` (default: `stub` in dev)
+- [ ] Add `SANDBOX_API_KEY` and `SANDBOX_API_SECRET` env vars (from sandbox.co.in dashboard)
+- [ ] Add `DIGIO_CLIENT_ID` and `DIGIO_CLIENT_SECRET` env vars (for production)
+- [ ] Add `KYC_WEBHOOK_SECRET` env var — HMAC key for validating inbound webhooks
+- [ ] Add `PENNY_DROP_PROVIDER`: `razorpay` | `cashfree` | `stub`
+- [ ] Add `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` (already needed for payments; confirm shared)
+- [ ] Update Joi validation schema in `AppModule` to require KYC env vars when `KYC_PROVIDER !== 'stub'`
+- [ ] Update `.env.example` with all new keys (values blank — comments explain where to get them)
+
+### B. SandboxKycService (development provider)
+
+> Use [Sandbox.co.in API docs](https://docs.sandbox.co.in) — all calls require `Authorization: Bearer <token>` and `x-api-version: 2.0` headers.
+
+#### Aadhaar OTP (Sandbox.co.in `/kyc/aadhaar/otp`)
+- [ ] Create `packages/backend/src/kyc/providers/sandbox-kyc.service.ts`
+- [ ] `POST /kyc/aadhaar/otp` — Sandbox API: sends real OTP to the mobile linked to that Aadhaar; returns `ref_id` (use as `sessionId`)
+  - Request: `{ "@entity": "in.co.sandbox.kyc.aadhaar.otp.request", "aadhaar_number": "..." }`
+  - Store `ref_id` in Redis with 10-min TTL keyed to `userId`
+- [ ] `POST /kyc/aadhaar/otp/verify` — Sandbox API: validates OTP; returns name, DOB, address (do NOT store address or full name from here — only masked Aadhaar)
+  - On success: set `kycStatus = PENDING`, `kycMethod = AADHAAR`, store `maskedAadhaar`
+  - Clear Redis session after use (prevent replay)
+
+#### PAN Verification (Sandbox.co.in `/kyc/pan`)
+- [ ] `POST /kyc/pan` — Sandbox API: validates PAN and returns name, DOB from ITD
+  - Request: `{ "@entity": "in.co.sandbox.kyc.pan.request", "pan": "ABCDE1234F" }`
+  - On success: store `maskedPan`, set `kycStatus = PENDING`, `kycMethod = PAN`
+  - No image upload needed with Sandbox.co.in PAN API (it's database lookup, not OCR)
+  - *Note: Digio PAN OCR is needed for production PAN card image upload flow*
+
+#### Bank Account Verification / Penny Drop (Sandbox.co.in `/bank/verify`)
+- [ ] `POST /bank/verify` — Sandbox API: penny-drop verification
+  - Request: `{ "account_number": "...", "ifsc": "...", "name": "..." }`
+  - On success: set `PaymentDetails.status = VERIFIED`, store `verifiedAt`
+  - On failure: set `PaymentDetails.status = NONE`, return error message to client
+
+### C. DigioKycService (production provider)
+
+> [Digio API docs](https://ext.digio.in:444/api-documentation) — bundles KYC verification + Aadhaar eSign
+
+- [ ] Create `packages/backend/src/kyc/providers/digio-kyc.service.ts`
+- [ ] Implement Aadhaar OTP initiation via Digio's `/client/kyc/initiate` endpoint
+- [ ] Implement OTP verification via Digio's `/client/kyc/verify` endpoint
+- [ ] Implement Aadhaar eSign request (used for "Confirm Agreement" flow — replaces manual confirm)
+  - This is a Phase 1+ item: wire into `POST /agreements/:id/confirm` as the signing mechanism
+  - Digio sends signed PDF back via webhook; store `signedPdfUrl` on `Agreement` entity
+- [ ] HMAC webhook signature validation for all Digio callbacks (`x-digio-signature` header)
+
+### D. KycProviderFactory (provider switching)
+
+- [ ] Create `packages/backend/src/kyc/kyc-provider.factory.ts`
+  - Reads `KYC_PROVIDER` env var at startup
+  - Returns `SandboxKycService` | `DigioKycService` | `StubKycService`
+  - `StubKycService` is the current in-memory implementation (for local dev without API keys)
+- [ ] Create `packages/backend/src/kyc/kyc-provider.interface.ts` with the `IKycProvider` interface:
+  ```typescript
+  interface IKycProvider {
+    initiateAadhaarOtp(aadhaarNumber: string): Promise<{ sessionId: string }>;
+    verifyAadhaarOtp(sessionId: string, otp: string): Promise<{ maskedAadhaar: string }>;
+    verifyPan(panNumber: string): Promise<{ maskedPan: string }>;
+    verifyBankAccount(accountNumber: string, ifsc: string): Promise<{ verified: boolean }>;
+    verifyLiveness(imageBase64: string): Promise<{ passed: boolean; reason?: string }>;
+  }
+  ```
+- [ ] Refactor `UsersService` to call `KycProviderFactory` instead of inline stub logic
+- [ ] Register `KycModule` in `AppModule`
+
+### E. Selfie / Liveness (Hyperverge or Digio)
+
+- [ ] For Sandbox: use Digio's `/client/kyc/face-match` or stub the endpoint with a configurable flag `SELFIE_STUB=true`
+- [ ] For Production: integrate Hyperverge FaceMatch API or Digio's bundled liveness
+  - Upload selfie image from mobile to backend as `multipart/form-data`
+  - Backend forwards to liveness provider (never the app directly)
+  - On pass: `kycStatus = VERIFIED`
+  - On fail: `kycStatus = REJECTED`, `kycRejectionReason` populated from provider response
+
+### F. Webhook endpoint hardening
+
+- [ ] `POST /kyc/webhook` — dedicated webhook receiver for all KYC provider callbacks
+  - Validate `HMAC-SHA256` signature on every inbound request (reject without processing if invalid)
+  - Idempotent: check `kycJobId` already processed before updating DB
+  - Log raw payload to audit table (never log Aadhaar/PAN numbers)
+- [ ] `POST /payments/webhook` — confirm Razorpay HMAC already validated (it is); add integration test
+
+### G. Mobile — no changes needed for provider switch
+
+> The frontend already calls the correct backend endpoints. No mobile changes are required to switch providers — that's the whole point of the architecture.
+
+- [x] Mobile calls `POST /users/me/kyc/aadhaar/init` (not Sandbox.co.in directly) ✅
+- [x] Mobile calls `POST /users/me/kyc/aadhaar/verify` (not Sandbox.co.in directly) ✅
+- [x] Mobile calls `POST /users/me/kyc/pan` (backend handles S3 + provider) ✅
+- [x] Mobile calls `POST /users/me/kyc/selfie` (backend handles liveness API) ✅
+- [x] Mobile calls `POST /users/me/payment-details` (backend handles penny-drop) ✅
 
 ---
 

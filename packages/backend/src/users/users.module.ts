@@ -9,6 +9,7 @@ import { ReputationToken } from '../reputation/reputation-token.entity';
 import { PropertyInterest } from '../interests/property-interest.entity';
 import { Property } from '../properties/property.entity';
 import { PropertyImage } from '../properties/property-image.entity';
+import { KycModule } from '../kyc/kyc.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PropertyImage } from '../properties/property-image.entity';
       User, PaymentDetails, Wallet, ReputationToken,
       PropertyInterest, Property, PropertyImage,
     ]),
+    KycModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

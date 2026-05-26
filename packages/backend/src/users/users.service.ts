@@ -1,12 +1,11 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { createCipheriv, createDecipheriv, randomBytes, type CipherKey } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { User } from './user.entity';
 import { PaymentDetails } from './payment-details.entity';
 import { Wallet } from '../blockchain/wallet.entity';
@@ -19,10 +18,8 @@ import { KycAadhaarInitDto } from './dto/kyc-aadhaar-init.dto';
 import { KycAadhaarVerifyDto } from './dto/kyc-aadhaar-verify.dto';
 import { KycPanDto } from './dto/kyc-pan.dto';
 import { PaymentDetailsDto } from './dto/payment-details.dto';
-import { KycStatus, KycMethod, PaymentDetailsStatus, InterestStatus } from '@trustnest/shared';
-
-// In-memory store for Aadhaar OTP sessions (dev only; production: Redis)
-const aadhaarOtpStore = new Map<string, { userId: string; otp: string; expiresAt: number }>();
+import { KycStatus, KycMethod, PaymentDetailsStatus } from '@trustnest/shared';
+import { KycProviderFactory } from '../kyc/kyc-provider.factory';
 
 @Injectable()
 export class UsersService {
@@ -36,6 +33,7 @@ export class UsersService {
     @InjectRepository(PropertyInterest)  private readonly interestRepo: Repository<PropertyInterest>,
     @InjectRepository(Property)          private readonly propertyRepo: Repository<Property>,
     @InjectRepository(PropertyImage)     private readonly propertyImageRepo: Repository<PropertyImage>,
+    private readonly kycFactory: KycProviderFactory,
   ) {}
 
   async findById(id: string): Promise<User> {
@@ -91,33 +89,20 @@ export class UsersService {
   }
 
   // ─── KYC: Aadhaar ─────────────────────────────────────────────────────────
+  //
+  // All calls are routed through KycProviderFactory.
+  // Active provider is set by KYC_PROVIDER env var (stub | sandbox | digio).
+  // Mobile app NEVER calls the KYC provider directly — always via this service.
 
   async initiateAadhaarKyc(
     userId: string,
     dto: KycAadhaarInitDto,
   ): Promise<{ sessionId: string }> {
-    const { aadhaarNumber } = dto;
-    const maskedAadhaar = `XXXX-XXXX-${aadhaarNumber.slice(-4)}`;
+    // Delegate to active KYC provider (stub/Sandbox.co.in/Digio)
+    const { sessionId } = await this.kycFactory.getProvider().initiateAadhaarOtp(dto.aadhaarNumber);
 
-    // Store masked Aadhaar and set kycMethod
-    await this.userRepo.update(userId, {
-      maskedAadhaar,
-      kycMethod: KycMethod.AADHAAR,
-    });
-
-    // Generate a stub OTP session
-    // In production: call UIDAI/Sandbox API to send OTP to Aadhaar-linked mobile
-    const sessionId = randomBytes(16).toString('hex');
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    aadhaarOtpStore.set(sessionId, {
-      userId,
-      otp,
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-    });
-
-    this.logger.log(
-      `[DEV] Aadhaar KYC OTP for userId=${userId}: ${otp} (session: ${sessionId})`,
-    );
+    // Store kycMethod early so UX can show "OTP sent" state correctly
+    await this.userRepo.update(userId, { kycMethod: KycMethod.AADHAAR });
 
     return { sessionId };
   }
@@ -126,26 +111,15 @@ export class UsersService {
     userId: string,
     dto: KycAadhaarVerifyDto,
   ): Promise<{ success: boolean }> {
-    const session = aadhaarOtpStore.get(dto.sessionId);
+    // Provider validates OTP and returns masked Aadhaar (last 4 digits only)
+    const { maskedAadhaar } = await this.kycFactory
+      .getProvider()
+      .verifyAadhaarOtp(dto.sessionId, dto.otp);
 
-    if (!session) {
-      throw new BadRequestException('Invalid or expired Aadhaar OTP session');
-    }
-    if (session.userId !== userId) {
-      throw new BadRequestException('Session does not belong to this user');
-    }
-    if (Date.now() > session.expiresAt) {
-      aadhaarOtpStore.delete(dto.sessionId);
-      throw new BadRequestException('Aadhaar OTP session has expired');
-    }
-    if (session.otp !== dto.otp) {
-      throw new BadRequestException('Incorrect OTP');
-    }
-
-    aadhaarOtpStore.delete(dto.sessionId);
-
+    // Persist result — never store the full Aadhaar number
     await this.userRepo.update(userId, {
-      kycStatus: KycStatus.PENDING,
+      maskedAadhaar,
+      kycStatus: KycStatus.PENDING, // selfie still required
       kycMethod: KycMethod.AADHAAR,
     });
 
@@ -158,22 +132,18 @@ export class UsersService {
     userId: string,
     dto: KycPanDto,
   ): Promise<{ jobId: string }> {
-    const { panNumber } = dto;
-    const maskedPan = `${panNumber.slice(0, 2)}XXXXXXX${panNumber.slice(-1)}`;
+    // Provider calls ITD database lookup (Sandbox.co.in /kyc/pan or Digio)
+    const { maskedPan } = await this.kycFactory.getProvider().verifyPan(dto.panNumber);
 
-    // In production: call PAN verification API (e.g., Karza, SignDesk)
-    // For now: store masked PAN and set status to PENDING
     const { v4: uuidv4 } = await import('uuid');
     const jobId = uuidv4();
 
     await this.userRepo.update(userId, {
       maskedPan,
       kycMethod: KycMethod.PAN,
-      kycStatus: KycStatus.PENDING,
+      kycStatus: KycStatus.PENDING, // selfie still required
       kycJobId: jobId,
     });
-
-    this.logger.log(`[DEV] PAN KYC initiated for userId=${userId}, jobId=${jobId}`);
 
     return { jobId };
   }
@@ -181,18 +151,23 @@ export class UsersService {
   // ─── KYC: Selfie / Liveness ───────────────────────────────────────────────
 
   async verifySelfie(userId: string): Promise<{ success: boolean; kycStatus: KycStatus }> {
-    // In production: upload selfie to liveness API (e.g., IDfy, IDFC LiveCheck)
-    // and compare with Aadhaar/PAN photo. For now: stub that always succeeds.
+    // Provider performs liveness check (Stub = auto-pass; Sandbox/Digio = real check)
+    // imageBase64 is empty string for now — TODO: accept multipart upload in controller
+    const { passed, reason } = await this.kycFactory.getProvider().verifyLiveness('');
 
-    // DEV STUB: Always marks as VERIFIED
-    this.logger.log(`[DEV] Selfie liveness check stub for userId=${userId} — auto-verified`);
-
-    await this.userRepo.update(userId, {
-      kycStatus: KycStatus.VERIFIED,
-      kycRejectionReason: null,
-    });
-
-    return { success: true, kycStatus: KycStatus.VERIFIED };
+    if (passed) {
+      await this.userRepo.update(userId, {
+        kycStatus: KycStatus.VERIFIED,
+        kycRejectionReason: null,
+      });
+      return { success: true, kycStatus: KycStatus.VERIFIED };
+    } else {
+      await this.userRepo.update(userId, {
+        kycStatus: KycStatus.REJECTED,
+        kycRejectionReason: reason ?? 'Liveness check failed',
+      });
+      return { success: false, kycStatus: KycStatus.REJECTED };
+    }
   }
 
   // ─── Legacy KYC (kept for backward compat) ────────────────────────────────
@@ -224,14 +199,30 @@ export class UsersService {
       ? this.encryptBankAccount(dto.bankAccountNumber)
       : null;
 
+    // Determine payment details status
+    // UPI IDs are accepted as-is (no external verification needed)
+    // Bank accounts require penny-drop verification via the active provider
+    let paymentStatus: PaymentDetailsStatus;
+    if (dto.bankAccountNumber && dto.bankIfsc) {
+      const { verified } = await this.kycFactory
+        .getProvider()
+        .verifyBankAccount(dto.bankAccountNumber, dto.bankIfsc);
+      paymentStatus = verified
+        ? PaymentDetailsStatus.VERIFIED
+        : PaymentDetailsStatus.PENDING_VERIFICATION;
+    } else {
+      // UPI ID — no external verification, mark as VERIFIED
+      paymentStatus = PaymentDetailsStatus.VERIFIED;
+    }
+
     if (details) {
       details.upiId = dto.upiId ?? details.upiId;
       details.bankAccountNumber = encryptedAccount ?? details.bankAccountNumber;
       details.bankIfsc = dto.bankIfsc ?? details.bankIfsc;
-      // In production: kick off bank account verification via penny drop
-      details.status = dto.bankAccountNumber
-        ? PaymentDetailsStatus.PENDING_VERIFICATION
-        : PaymentDetailsStatus.VERIFIED;
+      details.status = paymentStatus;
+      if (paymentStatus === PaymentDetailsStatus.VERIFIED) {
+        details.verifiedAt = new Date();
+      }
       await this.paymentDetailsRepo.save(details);
     } else {
       details = this.paymentDetailsRepo.create({
@@ -239,9 +230,8 @@ export class UsersService {
         upiId: dto.upiId ?? null,
         bankAccountNumber: encryptedAccount,
         bankIfsc: dto.bankIfsc ?? null,
-        status: dto.bankAccountNumber
-          ? PaymentDetailsStatus.PENDING_VERIFICATION
-          : PaymentDetailsStatus.VERIFIED,
+        status: paymentStatus,
+        verifiedAt: paymentStatus === PaymentDetailsStatus.VERIFIED ? new Date() : null,
       });
       await this.paymentDetailsRepo.save(details);
     }
