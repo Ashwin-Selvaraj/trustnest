@@ -164,6 +164,341 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ---
 
+## 12a. Three-Tier Onboarding & KYC Overhaul
+
+> **Context:** phone-only signup is insufficient for a platform that holds real money in escrow and creates legally binding rental agreements. The revised model uses progressive disclosure — collect only what is needed at each moment, never block signup with a wall of forms.
+>
+> **Gate summary:**
+> - Tier 1 (name + role + DOB) — required to complete signup
+> - Tier 2 (KYC: Aadhaar or PAN + selfie) — required to create or confirm an agreement
+> - Tier 3 (payment details: UPI ID or bank account) — required to initiate a deposit payment
+>
+> **Design files:** Figma/Claude Code screens to be supplied separately; this section covers backend + mobile implementation tasks only.
+
+### A. @trustnest/shared changes
+
+- [ ] Add `BOTH` variant to `UserRole` enum — a user can be both a tenant and an owner (landlord who also rents elsewhere)
+- [ ] Add `KycMethod` enum: `AADHAAR | PAN`
+- [ ] Add `PaymentDetailsStatus` enum: `NONE | PENDING_VERIFICATION | VERIFIED`
+
+### B. Backend — Data model additions
+
+- [ ] Add fields to `User` entity:
+  - [ ] `name: string` (required; legal name matching KYC document)
+  - [ ] `dob: Date` (date of birth; used for 18+ validation)
+  - [ ] `kycMethod: KycMethod | null`
+  - [ ] `maskedAadhaar: string | null` (last 4 digits only — never store full Aadhaar)
+  - [ ] `maskedPan: string | null` (e.g. `ABCDE1234F` → `ABCDE****F`)
+- [ ] Add `PaymentDetails` entity (separate table, one-to-one with User):
+  - [ ] `upiId: string | null`
+  - [ ] `bankAccountNumber: string | null` (AES-256-GCM encrypted at rest)
+  - [ ] `bankIfsc: string | null`
+  - [ ] `status: PaymentDetailsStatus`
+  - [ ] `verifiedAt: Date | null`
+- [ ] Write TypeORM migration for the above additions
+
+### C. Backend — Auth Module changes
+
+- [ ] Extend `POST /auth/verify-otp` request body to accept `name`, `role` (`TENANT | OWNER | BOTH`), and `dob`
+  - [ ] Validate 18+ server-side (`dob` must be ≥ 18 years before today); return `422` with clear message if underage
+  - [ ] Persist `name`, `role`, `dob` to `User` row on account creation
+  - [ ] Keep `name` / `role` / `dob` optional for existing users upgrading (backward compat) — add `POST /auth/complete-profile` endpoint for users who signed up before this change
+- [ ] `POST /auth/complete-profile` *(new)* — one-time endpoint for users missing name/role/dob; marks profile as complete; JWT guard required
+
+### D. Backend — Users Module changes
+
+> Replace the single `POST /users/me/kyc` (file upload only) with a proper two-path KYC flow.
+
+#### Aadhaar path (preferred — instant, OTP-based)
+- [ ] `POST /users/me/kyc/aadhaar/init` — accepts `aadhaarNumber`; calls UIDAI / DigiLocker API to send OTP to Aadhaar-linked mobile; returns `sessionId`
+- [ ] `POST /users/me/kyc/aadhaar/verify` — accepts `sessionId` + `otp`; on success stores `maskedAadhaar` (last 4 digits), sets `kycMethod = AADHAAR`, advances `kycStatus` to `PENDING` (selfie still required)
+- [ ] Mask Aadhaar before persisting — store only last 4 digits; full number never written to DB
+
+#### PAN path (fallback — async, document upload)
+- [ ] `POST /users/me/kyc/pan` — accepts `panNumber` + PAN card image (multipart); uploads image to S3; calls KYC provider API (e.g. Karza / IDfy); returns `jobId`; sets `kycStatus = PENDING`
+- [ ] KYC provider webhook — on callback, store `maskedPan`, set `kycMethod = PAN`; advance to `PENDING_SELFIE` or `VERIFIED` depending on whether selfie is also required by provider
+- [ ] Validate PAN format server-side (`/^[A-Z]{5}[0-9]{4}[A-Z]$/`) before calling provider
+
+#### Selfie / liveness (required for both paths)
+- [ ] `POST /users/me/kyc/selfie` — accepts selfie image (multipart); calls liveness-check API (e.g. Hyperverge / IDfy); on pass sets `kycStatus = VERIFIED`; on fail sets `kycStatus = REJECTED` with rejection reason stored in `kycRejectionReason` column
+- [ ] Add `kycRejectionReason: string | null` column to `User` entity
+
+#### Payment details
+- [ ] `POST /users/me/payment-details` — accepts `upiId` OR `{ bankAccountNumber, bankIfsc }`; for bank accounts, verify via penny-drop (Razorpay / Cashfree); sets `status = VERIFIED`
+- [ ] `GET /users/me/payment-details` — return masked payment details (`upiId` as-is; account number masked to last 4 digits)
+- [ ] `DELETE /users/me/payment-details` — remove and reset status to `NONE`
+- [ ] `GET /users/me` — update response to include `profileComplete: boolean`, `kycStatus`, `kycMethod`, `paymentDetailsStatus`
+
+### E. Backend — Progressive Access Gates
+
+> Guards that block downstream actions until the user has completed the required tier.
+
+- [ ] `RequiresProfileComplete` guard — checks `name`, `role`, `dob` are set on `User`; applied to all routes except `/auth/*` and `GET /users/me`; returns `403` with `{ code: 'PROFILE_INCOMPLETE' }` if missing
+- [ ] `RequiresKyc` guard — checks `kycStatus === VERIFIED`; applied to:
+  - `POST /agreements`
+  - `POST /agreements/:id/confirm`
+  - Returns `403` with `{ code: 'KYC_REQUIRED', kycStatus: '...' }`
+- [ ] `RequiresPaymentDetails` guard — checks `PaymentDetails.status === VERIFIED`; applied to:
+  - `POST /payments/initiate`
+  - Returns `403` with `{ code: 'PAYMENT_DETAILS_REQUIRED' }`
+- [ ] All three guards return a machine-readable `code` field so the mobile app can navigate the user to the right screen without string-matching error messages
+
+### F. Mobile — Auth flow changes
+
+> The existing phone → OTP → home flow becomes phone → OTP → profile completion → home.
+
+- [ ] **Profile completion screen** *(new, shown once after first OTP verify)*
+  - Full legal name text input
+  - Role picker: Tenant / Owner / Both (segmented control or radio)
+  - Date of birth picker (date wheel; blocks if under 18 with inline error)
+  - CTA: "Continue" → calls extended `POST /auth/verify-otp` or `POST /auth/complete-profile`
+- [ ] Skip profile completion screen if `name` + `role` + `dob` already set (returning user)
+
+### G. Mobile — KYC screens *(new)*
+
+- [ ] **KYC entry screen** — shown when `RequiresKyc` gate returns `403`
+  - Explains why verification is needed ("Required to create a rental agreement")
+  - Two CTAs: "Verify with Aadhaar" / "Verify with PAN card"
+- [ ] **Aadhaar verification screen**
+  - Step 1: Aadhaar number input (12-digit, masked after entry) → "Send OTP" → calls `POST /users/me/kyc/aadhaar/init`
+  - Step 2: 6-digit OTP input (reuses `OtpInput` from ui-kit) → calls `POST /users/me/kyc/aadhaar/verify`
+  - Success → advance to selfie screen
+- [ ] **PAN verification screen**
+  - PAN number text input with format validation
+  - PAN card image upload (camera or gallery)
+  - Calls `POST /users/me/kyc/pan`; shows "Under review" pending state
+- [ ] **Selfie / liveness screen** *(required after both paths)*
+  - Camera preview with oval face guide
+  - Liveness instructions ("blink", "turn left" etc. — driven by provider SDK)
+  - Calls `POST /users/me/kyc/selfie`
+  - Shows success ✅ or failure with reason + "Try again" CTA
+- [ ] **KYC rejected screen** — shown when `kycStatus === REJECTED`; shows `kycRejectionReason`; CTAs to retry selfie or switch KYC method
+
+### H. Mobile — Payment details screen *(new)*
+
+- [ ] **Payment details screen** — shown contextually when `RequiresPaymentDetails` gate returns `403`
+  - Tab picker: "UPI ID" / "Bank Account"
+  - UPI tab: text input for UPI ID (e.g. `ashwin@upi`); calls `POST /users/me/payment-details`
+  - Bank tab: account number + IFSC inputs; penny-drop verification shown as "Verifying…" spinner
+  - Success → navigates back to the blocked action (payment screen)
+
+### I. Mobile — Progressive gate bottom sheets *(new)*
+
+> Contextual prompts that appear inline when a gate blocks an action — no redirect, just a bottom sheet with a CTA.
+
+- [ ] `KycRequiredSheet` — shown on "Create Agreement" / "Confirm Agreement" CTA when `kycStatus !== VERIFIED`
+  - Body: "Verify your identity to continue. Takes 2 minutes."
+  - CTA: "Verify now" → navigates to KYC entry screen
+- [ ] `PaymentDetailsRequiredSheet` — shown on "Pay Deposit" CTA when payment details missing
+  - Body: "Add a UPI ID or bank account to pay."
+  - CTA: "Add payment details" → navigates to payment details screen
+- [ ] `ProfileIncompleteSheet` — shown on any gated action when profile is incomplete
+  - CTA: "Complete your profile" → navigates to profile completion screen
+
+### J. Mobile — Profile screen updates
+
+- [ ] Add "Verification" section: shows Aadhaar ✅ / PAN ✅ / Selfie ✅ with masked identifiers
+- [ ] Add "Payment Details" section: shows masked UPI ID or bank account + "Edit" CTA
+- [ ] Show inline "Action required" banners for incomplete tiers (e.g. "Add a UPI ID to enable payments")
+
+---
+
+## 12b. Property Marketplace (Listings & Discovery)
+
+> **Context:** agreements currently require both parties to already know each other. This section adds a NoBroker-style discovery layer — owners list properties, tenants browse and express interest, and the platform auto-creates a pre-filled agreement draft when an owner accepts a tenant. The marketplace is the primary acquisition funnel for new agreements.
+>
+> **Critical join:** `POST /properties/:id/interests/:interestId/accept` → automatically creates an `Agreement` record pre-filled from the property listing and notifies both parties to review and sign it. This is what ties the marketplace to the escrow engine.
+>
+> **Design files:** Figma/Claude Code screens to be supplied separately; this section covers backend + mobile implementation tasks only.
+
+### A. @trustnest/shared — new enums and types
+
+- [ ] Add `BhkType` enum: `STUDIO | ONE_BHK | TWO_BHK | THREE_BHK | FOUR_BHK_PLUS | VILLA | INDEPENDENT_HOUSE`
+- [ ] Add `FurnishingStatus` enum: `UNFURNISHED | SEMI_FURNISHED | FULLY_FURNISHED`
+- [ ] Add `PropertyStatus` enum: `DRAFT | ACTIVE | PAUSED | RENTED`
+- [ ] Add `InterestStatus` enum: `PENDING | ACCEPTED | DECLINED | WITHDRAWN`
+- [ ] Add `TenantPreference` enum: `FAMILY | BACHELORS | WORKING_PROFESSIONAL | STUDENTS | ANY`
+
+### B. Backend — Data model additions
+
+- [ ] Add `Property` entity (`packages/backend/src/properties/property.entity.ts`):
+  - [ ] `id: uuid`
+  - [ ] `ownerId: uuid` (FK → User)
+  - [ ] `title: string` (e.g. "2BHK in Indiranagar")
+  - [ ] `address: string`
+  - [ ] `city: string` (indexed — primary search field)
+  - [ ] `locality: string` (indexed — secondary search field)
+  - [ ] `bhkType: BhkType`
+  - [ ] `furnishingStatus: FurnishingStatus`
+  - [ ] `monthlyRentINR: decimal`
+  - [ ] `depositINR: decimal`
+  - [ ] `areaSqft: number | null`
+  - [ ] `floorNumber: number | null`
+  - [ ] `totalFloors: number | null`
+  - [ ] `description: string | null`
+  - [ ] `amenities: string[]` (jsonb column — parking, gym, lift, etc.)
+  - [ ] `preferredTenants: TenantPreference[]` (jsonb column)
+  - [ ] `availableFrom: Date`
+  - [ ] `status: PropertyStatus` (default `DRAFT`)
+
+- [ ] Add `PropertyImage` entity:
+  - [ ] `id: uuid`
+  - [ ] `propertyId: uuid` (FK → Property)
+  - [ ] `s3Key: string`
+  - [ ] `url: string`
+  - [ ] `displayOrder: number` (lower = shown first)
+  - [ ] `isPrimary: boolean` (cover photo for listing cards)
+
+- [ ] Add `PropertyInterest` entity:
+  - [ ] `id: uuid`
+  - [ ] `propertyId: uuid` (FK → Property)
+  - [ ] `tenantId: uuid` (FK → User)
+  - [ ] `status: InterestStatus` (default `PENDING`)
+  - [ ] `message: string | null` (optional note from tenant to owner)
+  - [ ] `agreementId: uuid | null` (populated when owner accepts → auto-created Agreement)
+
+- [ ] Write TypeORM migration covering all three new tables
+- [ ] Add DB indexes:
+  - `idx_properties_search` on `(city, locality, status, monthly_rent_inr)`
+  - `idx_properties_owner` on `(owner_id, status)`
+  - `idx_interests_property` on `(property_id, status)`
+  - `idx_interests_tenant` on `(tenant_id, status)`
+
+### C. Backend — Properties Module *(new NestJS module)*
+
+#### Listing CRUD
+- [ ] `POST /properties` — owner creates listing; requires `RequiresKyc` + `RequiresOwnerRole` guards; initial status `DRAFT`
+- [ ] `GET /properties` — public search; query params: `city`, `locality`, `minRent`, `maxRent`, `bhkType`, `furnishingStatus`, `availableFrom`; paginated (default 20); returns listing cards (no sensitive owner data)
+- [ ] `GET /properties/:id` — public detail view; includes owner's public profile (name + reputation score + KYC badge — no phone/wallet)
+- [ ] `PATCH /properties/:id` — owner edits listing; auth + ownership check; cannot edit if `status === RENTED`
+- [ ] `PATCH /properties/:id/status` — owner toggles `ACTIVE ↔ PAUSED`; separate endpoint to make intent explicit
+- [ ] `DELETE /properties/:id` — soft delete (sets status to `DRAFT`); only if no `PENDING` or `ACCEPTED` interests exist
+
+#### Photo management
+- [ ] `POST /properties/:id/photos` — multipart upload; max 10 images per property; uploads to S3; creates `PropertyImage` rows; auto-sets first upload as `isPrimary`
+- [ ] `PATCH /properties/:id/photos/:photoId/primary` — owner sets a different cover photo
+- [ ] `DELETE /properties/:id/photos/:photoId` — removes photo from S3 and DB; blocks if it's the only photo on an `ACTIVE` listing
+
+#### Publishing gate
+- [ ] Block `PATCH /properties/:id/status` to `ACTIVE` if property is missing: title, address, at least 1 photo, `monthlyRentINR`, `depositINR`, `availableFrom` — return `422` with a list of missing fields
+
+### D. Backend — Interests Module *(new NestJS module)*
+
+- [ ] `POST /properties/:id/interest` — tenant expresses interest; requires `RequiresKyc` + `RequiresTenantRole` guards; one active interest per tenant per property (block duplicates); creates `PropertyInterest` with status `PENDING`; sends push notification to owner
+- [ ] `GET /properties/:id/interests` — owner sees all interested tenants for their listing; each interest includes tenant's name, reputation score, KYC status badge; requires auth + ownership check
+- [ ] `GET /users/me/interests` — tenant's full interest history with property summary + status chip
+- [ ] `PATCH /properties/:id/interests/:interestId/accept` — **critical join endpoint**:
+  - [ ] Validates caller is the property owner
+  - [ ] Sets `PropertyInterest.status = ACCEPTED`
+  - [ ] Sets all other `PENDING` interests on same property to `DECLINED` (one tenant per property)
+  - [ ] Auto-creates `Agreement` record pre-filled from property: `tenantId`, `ownerId`, `propertyAddress`, `monthlyRentINR`, `depositINR`; status `DRAFT`
+  - [ ] Writes `agreementId` back onto `PropertyInterest` row
+  - [ ] Sends push to tenant: "Your interest was accepted — review and sign the agreement"
+  - [ ] Sends push to owner: "Agreement draft created — review and sign"
+- [ ] `PATCH /properties/:id/interests/:interestId/decline` — owner declines; sets status `DECLINED`; sends push to tenant
+- [ ] `DELETE /properties/:id/interests/:interestId` — tenant withdraws interest; only allowed while `PENDING`; sets status `WITHDRAWN`
+
+### E. Backend — New access guards
+
+- [ ] `RequiresOwnerRole` guard — checks `user.role === OWNER || user.role === BOTH`; returns `403` with `{ code: 'OWNER_ROLE_REQUIRED' }`; applied to all property write endpoints
+- [ ] `RequiresTenantRole` guard — checks `user.role === TENANT || user.role === BOTH`; returns `403` with `{ code: 'TENANT_ROLE_REQUIRED' }`; applied to `POST /properties/:id/interest`
+- [ ] Both guards require `kycStatus === VERIFIED` (build on top of `RequiresKyc`)
+
+### F. ui-kit — new components
+
+- [ ] `PropertyCard` component — cover photo, title, locality, BHK chip, furnishing chip, rent, deposit, owner reputation badge; used in browse feed and My Properties list
+- [ ] `PhotoGallery` component — swipeable full-width image carousel with dot indicators and image count badge
+- [ ] `FilterBar` component — horizontal scrollable row of filter chips (BHK, rent range, furnishing, availability); selected chips highlighted; `onFilterChange` callback
+- [ ] `InterestStatusChip` component — PENDING (yellow) / ACCEPTED (green) / DECLINED (red) / WITHDRAWN (grey) variants; extends existing `StatusChip` pattern
+- [ ] `TenantSummaryCard` component — for owner's interest list: tenant avatar initials, name, reputation stars, KYC badge, interest message, Accept / Decline action buttons
+
+### G. Mobile — Navigation changes
+
+- [ ] Update bottom tab bar from 3 tabs to 4:
+  - Tab 1: **Home** (agreements list) — existing
+  - Tab 2: **Discover** (see below) — new
+  - Tab 3: **Notifications** — existing (move here if not already)
+  - Tab 4: **Profile** — existing
+- [ ] **Discover tab** has role-aware sub-navigation:
+  - `TENANT` role → shows Browse screen directly
+  - `OWNER` role → shows My Properties screen directly
+  - `BOTH` role → shows a segmented control "Browse / My Properties" at the top
+
+### H. Mobile — Browse screens *(tenant-facing)*
+
+- [ ] **Browse / Search screen**
+  - Search bar (city or locality text input)
+  - `FilterBar` component below search (BHK, rent range, furnishing)
+  - Vertical `FlatList` of `PropertyCard` components; paginated with infinite scroll
+  - Empty state: "No properties found — try adjusting your filters"
+  - Pull-to-refresh
+- [ ] **Property detail screen** (`/property/[id]`)
+  - `PhotoGallery` full-width at top
+  - Property specs: BHK, area, floor, furnishing, amenities chips
+  - Rent + deposit prominently displayed (INR formatted)
+  - Available from date
+  - Owner section: name, reputation score (stars), KYC verified badge
+  - "Express Interest" CTA button (full-width, primary)
+  - Interest message optional text input (shown before CTA, collapsible)
+  - If `InterestStatus === ACCEPTED` → replace CTA with "View Agreement" button
+  - If `InterestStatus === PENDING` → show "Interest sent ✓" state with "Withdraw" option
+- [ ] **My Interests screen** (`/interests`)
+  - Accessible from Profile or Discover tab (tenant role)
+  - List of `PropertyCard` + `InterestStatusChip` pairs
+  - Tap → goes to property detail screen
+
+### I. Mobile — My Properties screens *(owner-facing)*
+
+- [ ] **My Properties screen**
+  - List of owner's `PropertyCard`s with status chips (Draft / Active / Paused / Rented)
+  - FAB: "Add Property" → navigates to listing creation flow
+  - Tap on active listing → goes to Property Management screen
+- [ ] **Property Management screen** (`/my-properties/[id]`)
+  - Shows listing preview (same as public detail but with edit controls)
+  - "Interested Tenants" count badge → taps into Interest Requests screen
+  - Toggle: "Active / Paused"
+  - "Edit listing" CTA
+  - "Delete listing" (destructive, only if no accepted interests)
+- [ ] **Interest Requests screen** (`/my-properties/[id]/interests`)
+  - List of `TenantSummaryCard` components
+  - Empty state: "No one has expressed interest yet"
+  - Accept → shows confirmation bottom sheet → calls accept endpoint → on success navigates to the newly created agreement detail
+  - Decline → calls decline endpoint; card greys out inline
+
+### J. Mobile — Add / Edit Property flow *(owner-facing, multi-step)*
+
+- [ ] **Step 1 — Location**
+  - Property title text input
+  - Full address text input
+  - City text input (or picker from preset list of major Indian cities)
+  - Locality text input
+- [ ] **Step 2 — Property details**
+  - BHK type picker (segmented or bottom sheet selector)
+  - Furnishing status picker
+  - Area in sqft (optional number input)
+  - Floor number / total floors (optional)
+- [ ] **Step 3 — Pricing**
+  - Monthly rent (INR formatted number input)
+  - Security deposit (INR formatted; auto-suggests 2× or 3× rent with quick-fill chips)
+  - Available from date picker (calendar; minimum today)
+- [ ] **Step 4 — Preferences & description**
+  - Preferred tenants multi-select chips (Family, Bachelors, Working Professional, Students, Any)
+  - Amenities multi-select chips (Parking, Lift, Gym, Swimming Pool, Power Backup, etc.)
+  - Description optional text area (max 500 chars)
+- [ ] **Step 5 — Photos**
+  - Photo grid (up to 10); tap to add from camera or gallery
+  - Drag-to-reorder for display order (or long-press reorder)
+  - Tap existing photo → full preview + option to set as cover or remove
+  - "At least 1 photo required to publish" validation
+- [ ] **Step 6 — Review & Publish**
+  - Preview card showing how the listing will look to tenants
+  - "Save as Draft" and "Publish" CTAs
+  - "Publish" validates all required fields; shows inline errors if any missing
+- [ ] Progress indicator across all steps (step dots or numbered header)
+- [ ] All steps auto-save to local state; navigating back does not lose data
+
+---
+
 ## 13. Testing & QA
 
 - [ ] Contract tests: all pass on Hardhat local node
