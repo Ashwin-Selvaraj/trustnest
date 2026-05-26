@@ -14,6 +14,7 @@ import { AdminModule } from './admin/admin.module';
 import { BlockchainModule } from './blockchain/blockchain.module';
 import { PropertiesModule } from './properties/properties.module';
 import { InterestsModule } from './interests/interests.module';
+import { KycModule } from './kyc/kyc.module';
 import { User } from './users/user.entity';
 import { Wallet } from './blockchain/wallet.entity';
 import { Agreement } from './agreements/agreement.entity';
@@ -67,6 +68,7 @@ import { PropertyInterest } from './interests/property-interest.entity';
     AdminModule,
     PropertiesModule,
     InterestsModule,
+    KycModule,
   ],
 })
 export class AppModule {}
