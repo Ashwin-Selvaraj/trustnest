@@ -75,12 +75,12 @@ export const AgreementCardStories = (): React.ReactElement => {
 
 export const ReputationBadgeStories = (): React.ReactElement => (
   <View style={styles.container}>
-    <ReputationBadge averageScore={4.5} tokenCount={12} />
-    <ReputationBadge averageScore={3.0} tokenCount={5} />
-    <ReputationBadge averageScore={5.0} tokenCount={1} />
-    <ReputationBadge averageScore={null} tokenCount={0} />
-    <ReputationBadge averageScore={4.2} tokenCount={8} compact />
-    <ReputationBadge averageScore={null} compact />
+    <ReputationBadge score={4.5} reviews={12} />
+    <ReputationBadge score={3.0} reviews={5} />
+    <ReputationBadge score={5.0} reviews={1} />
+    <ReputationBadge hasReviews={false} />
+    <ReputationBadge score={4.2} reviews={8} />
+    <ReputationBadge hasReviews={false} />
   </View>
 );
 
@@ -100,9 +100,9 @@ function OtpInputDemo(): React.ReactElement {
   const [otp, setOtp] = React.useState('');
   return (
     <View style={styles.container}>
-      <OtpInput value={otp} onChangeValue={setOtp} />
-      <OtpInput value="12345" onChangeValue={() => undefined} />
-      <OtpInput value="123" onChangeValue={() => undefined} hasError />
+      <OtpInput value={otp} onChange={setOtp} />
+      <OtpInput value="12345" onChange={() => undefined} />
+      <OtpInput value="123" onChange={() => undefined} error />
     </View>
   );
 }

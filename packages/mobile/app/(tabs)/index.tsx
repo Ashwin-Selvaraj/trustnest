@@ -58,11 +58,10 @@ export default function HomeScreen(): React.ReactElement {
           Create your first rental agreement to get started.
         </Text>
         <Button
-          label="Create Agreement"
           variant="primary"
           onPress={() => router.push('/agreement/create')}
           style={styles.emptyButton}
-        />
+        >Create Agreement</Button>
       </View>
     );
   };

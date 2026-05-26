@@ -102,20 +102,18 @@ export default function DisputeScreen(): React.ReactElement {
         ))}
 
         <Button
-          label="Submit Dispute"
           variant="destructive"
           fullWidth
           loading={isLoading}
           onPress={() => void handleSubmit()}
           style={styles.submitButton}
-        />
+        >Submit Dispute</Button>
 
         <Button
-          label="Cancel"
           variant="secondary"
           fullWidth
           onPress={() => router.back()}
-        />
+        >Cancel</Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );

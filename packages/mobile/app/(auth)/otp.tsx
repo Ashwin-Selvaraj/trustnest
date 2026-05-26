@@ -84,23 +84,22 @@ export default function OtpScreen(): React.ReactElement {
 
         <OtpInput
           value={otp}
-          onChangeValue={setOtp}
+          onChange={setOtp}
           onComplete={(code) => void handleVerify(code)}
-          hasError={!!error}
+          error={!!error}
           style={styles.otpInput}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Button
-          label="Verify"
           variant="primary"
           fullWidth
           loading={isLoading}
           disabled={otp.length < 6}
           onPress={() => void handleVerify(otp)}
           style={styles.button}
-        />
+        >Verify</Button>
 
         <TouchableOpacity
           onPress={() => void handleResend()}

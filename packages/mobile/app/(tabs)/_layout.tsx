@@ -54,8 +54,8 @@ export default function TabsLayout(): React.ReactElement {
         options={{
           title: 'Agreements',
           tabBarLabel: 'Agreements',
-          tabBarIcon: ({ color }: { color: string; focused: boolean }) => (
-            <TabIcon emoji="📋" color={color} />
+          tabBarIcon: ({ color }) => (
+            <TabIcon emoji="📋" color={String(color)} />
           ),
           headerTitle: 'My Agreements',
         }}
@@ -65,8 +65,8 @@ export default function TabsLayout(): React.ReactElement {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }: { color: string; focused: boolean }) => (
-            <TabIcon emoji="👤" color={color} />
+          tabBarIcon: ({ color }) => (
+            <TabIcon emoji="👤" color={String(color)} />
           ),
         }}
       />

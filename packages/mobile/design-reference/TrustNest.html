@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustNest — Mobile Design</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f0eee9; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  @keyframes tn-spin { to { transform: rotate(360deg); } }
+  @keyframes tn-slide-in {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes tn-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes tn-sheet-up {
+    from { transform: translateY(40px); }
+    to { transform: translateY(0); }
+  }
+  @keyframes tn-shimmer {
+    0% { background-position: -200px 0; }
+    100% { background-position: 200px 0; }
+  }
+  textarea, input { font-family: inherit; }
+  /* Tighter scrollbar look inside frames */
+  ::-webkit-scrollbar { width: 0; height: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <rect width="100" height="100" fill="#2563EB"/>
+    <path d="M50 22 L78 42 V74 a3 3 0 01-3 3 H25 a3 3 0 01-3-3 V42 L50 22 Z" fill="#fff"/>
+    <path d="M40 77 V58 h20 v19" stroke="#2563EB" stroke-width="3" fill="none"/>
+  </svg>
+</template>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="tokens.js"></script>
+<script src="marketplace-data.js"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="primitives.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="kyc-screens.jsx"></script>
+<script type="text/babel" src="profile-detail-screens.jsx"></script>
+<script type="text/babel" src="marketplace-primitives.jsx"></script>
+<script type="text/babel" src="marketplace-screens.jsx"></script>
+<script type="text/babel" src="prototype.jsx"></script>
+
+<script type="text/babel">
+const FW = 420, FH = 880; // artboard frame size around 393x852 iOS device
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="prototype" title="Interactive prototype" subtitle="Click through the full flow — start at Phone Entry, work your way to a confirmed deposit.">
+        <DCArtboard id="live" label="Live · Tenant flow" width={FW} height={FH}>
+          <div data-screen-label="Prototype · Live" style={{ width: '100%', height: '100%', background: '#f0eee9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Prototype initial="phone" />
+          </div>
+        </DCArtboard>
+        <DCArtboard id="live-home" label="Live · Start at Home" width={FW} height={FH}>
+          <div data-screen-label="Prototype · From Home" style={{ width: '100%', height: '100%', background: '#f0eee9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Prototype initial="home" />
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="onboarding" title="Onboarding" subtitle="Phone entry → OTP. States: default, loading, error.">
+        <DCArtboard id="phone-default" label="01 · Phone — default" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="01 Phone Entry · default" style={{ height: '100%' }}>
+              <PhoneEntryScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="phone-loading" label="01 · Phone — loading" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="01 Phone Entry · loading" style={{ height: '100%' }}>
+              <PhoneEntryScreen initialState="loading" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="phone-error" label="01 · Phone — error" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="01 Phone Entry · error" style={{ height: '100%' }}>
+              <PhoneEntryScreen initialState="error" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="otp-default" label="02 · OTP — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="02 OTP · empty" style={{ height: '100%' }}>
+              <OtpScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="otp-filled" label="02 · OTP — filled" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="02 OTP · filled" style={{ height: '100%' }}>
+              <OtpScreen initialState="filled" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="otp-error" label="02 · OTP — error" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="02 OTP · error" style={{ height: '100%' }}>
+              <OtpScreen initialState="error" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="kyc" title="KYC onboarding" subtitle="Slots in between OTP and Home — profile setup → 3-step identity verification → submitted.">
+        <DCArtboard id="profile-setup" label="2B · Profile setup — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2B Profile Setup · empty" style={{ height: '100%' }}>
+              <ProfileSetupScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="profile-setup-tenant" label="2B · Profile setup — tenant" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2B Profile Setup · tenant selected" style={{ height: '100%' }}>
+              <ProfileSetupScreen initialRole="tenant" initialName="Rajesh Kumar" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="profile-setup-both" label="2B · Profile setup — both roles" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2B Profile Setup · both roles" style={{ height: '100%' }}>
+              <ProfileSetupScreen initialRole="both" initialName="Rajesh Kumar" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-intro" label="2C · KYC intro" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2C KYC Intro" style={{ height: '100%' }}>
+              <KycIntroScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-document-empty" label="2D · Choose ID — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2D KYC Document · empty" style={{ height: '100%' }}>
+              <KycDocumentScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-document-aadhaar" label="2D · Choose ID — Aadhaar" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2D KYC Document · Aadhaar selected" style={{ height: '100%' }}>
+              <KycDocumentScreen initialSelected="aadhaar" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-upload-empty" label="2E · Upload — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2E KYC Upload · empty" style={{ height: '100%' }}>
+              <KycUploadScreen docType="aadhaar" initialState="empty" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-upload-one" label="2E · Upload — front captured" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2E KYC Upload · one filled" style={{ height: '100%' }}>
+              <KycUploadScreen docType="aadhaar" initialState="one-filled" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-upload-both" label="2E · Upload — both captured" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2E KYC Upload · both filled" style={{ height: '100%' }}>
+              <KycUploadScreen docType="aadhaar" initialState="both-filled" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-upload-pan" label="2E · Upload — PAN (single)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2E KYC Upload · PAN" style={{ height: '100%' }}>
+              <KycUploadScreen docType="pan" initialState="empty" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-selfie-idle" label="2F · Selfie — idle" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2F KYC Selfie · idle" style={{ height: '100%' }}>
+              <KycSelfieScreen initialState="idle" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-selfie-captured" label="2F · Selfie — captured" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2F KYC Selfie · captured" style={{ height: '100%' }}>
+              <KycSelfieScreen initialState="captured" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-submitted" label="2G · Submitted" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="2G KYC Submitted" style={{ height: '100%' }}>
+              <KycSubmittedScreen docType="aadhaar" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="home-profile" title="Home & Profile" subtitle="Tab screens — populated, empty, and verification states.">
+        <DCArtboard id="home-populated" label="03 · Home — populated" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="03 Home · populated" style={{ height: '100%' }}>
+              <HomeScreen state="populated" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="home-empty" label="03 · Home — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="03 Home · empty" style={{ height: '100%' }}>
+              <HomeScreen state="empty" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="home-loading" label="03 · Home — loading" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="03 Home · loading" style={{ height: '100%' }}>
+              <HomeScreen state="loading" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="profile-verified" label="04 · Profile — verified" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="04 Profile · verified" style={{ height: '100%' }}>
+              <ProfileScreen kycState="verified" hasReputation={true} />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="profile-pending" label="04 · Profile — KYC pending" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="04 Profile · KYC pending" style={{ height: '100%' }}>
+              <ProfileScreen kycState="pending" hasReputation={false} />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="profile-rejected" label="04 · Profile — KYC rejected" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="04 Profile · KYC rejected" style={{ height: '100%' }}>
+              <ProfileScreen kycState="rejected" hasReputation={false} />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="profile-both-roles" label="04 · Profile — both roles" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="04 Profile · both roles" style={{ height: '100%' }}>
+              <ProfileScreen kycState="verified" hasReputation={true} user={{
+                ...window.SAMPLE_USER, roles: ['tenant', 'owner'],
+              }} />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="personal-info" label="4A · Personal info" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="4A Personal Info · view" style={{ height: '100%' }}>
+              <PersonalInfoScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="personal-info-edit" label="4A · Personal info — edit" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="4A Personal Info · edit" style={{ height: '100%' }}>
+              <PersonalInfoScreen initialEditing />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-details-verified" label="4B · KYC details — verified" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="4B KYC Details · verified" style={{ height: '100%' }}>
+              <KycDetailsScreen state="verified" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-details-pending" label="4B · KYC details — pending" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="4B KYC Details · pending" style={{ height: '100%' }}>
+              <KycDetailsScreen state="pending" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-details-rejected" label="4B · KYC details — rejected" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="4B KYC Details · rejected" style={{ height: '100%' }}>
+              <KycDetailsScreen state="rejected" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="agreement" title="Agreement lifecycle" subtitle="Create → Confirm → Detail. Action buttons change by status and role.">
+        <DCArtboard id="create-empty" label="05 · Create — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="05 Create Agreement" style={{ height: '100%' }}>
+              <CreateAgreementScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="confirm" label="09 · Confirm & sign" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="09 Confirm Agreement" style={{ height: '100%' }}>
+              <ConfirmAgreementScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="detail-draft" label="06 · Detail — DRAFT" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="06 Detail · DRAFT" style={{ height: '100%' }}>
+              <AgreementDetailScreen agreementId="agr_003" viewerRole="tenant" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="detail-pending" label="06 · Detail — PENDING (tenant)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="06 Detail · PENDING_DEPOSIT" style={{ height: '100%' }}>
+              <AgreementDetailScreen agreementId="agr_002" viewerRole="tenant" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="detail-active-tenant" label="06 · Detail — ACTIVE (tenant)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="06 Detail · ACTIVE tenant" style={{ height: '100%' }}>
+              <AgreementDetailScreen agreementId="agr_001" viewerRole="tenant" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="detail-active-owner" label="06 · Detail — ACTIVE (owner)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="06 Detail · ACTIVE owner" style={{ height: '100%' }}>
+              <AgreementDetailScreen agreementId="agr_001" viewerRole="owner" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="detail-closed" label="06 · Detail — CLOSED" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="06 Detail · CLOSED" style={{ height: '100%' }}>
+              <AgreementDetailScreen agreementId="agr_004" viewerRole="tenant" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="payment" title="UPI Payment flow" subtitle="Every state of the deposit flow, side-by-side.">
+        <DCArtboard id="pay-idle" label="07 · Payment — idle" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="07 Payment · idle" style={{ height: '100%' }}>
+              <PaymentScreen initialPaymentState="idle" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="pay-awaiting" label="07 · Payment — awaiting UPI" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="07 Payment · awaiting" style={{ height: '100%' }}>
+              <PaymentScreen initialPaymentState="awaiting" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="pay-polling" label="07 · Payment — polling" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="07 Payment · polling" style={{ height: '100%' }}>
+              <PaymentScreen initialPaymentState="polling" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="pay-confirmed" label="07 · Payment — confirmed" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="07 Payment · confirmed" style={{ height: '100%' }}>
+              <PaymentScreen initialPaymentState="confirmed" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="dispute" title="Dispute" subtitle="The escape hatch — kept visually distinct (red) to underline its weight.">
+        <DCArtboard id="dispute-default" label="08 · Dispute — default" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="08 Dispute" style={{ height: '100%' }}>
+              <DisputeScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="components" title="Component library" subtitle="Reusable primitives the screens are built from.">
+        <DCArtboard id="buttons" label="Buttons" width={520} height={520}>
+          <ComponentShowcase title="Buttons">
+            <Row label="Primary">
+              <Button>Send OTP</Button>
+              <Button loading>Sending…</Button>
+              <Button disabled>Disabled</Button>
+            </Row>
+            <Row label="Secondary">
+              <Button variant="secondary">Cancel</Button>
+              <Button variant="secondary" loading>Working…</Button>
+            </Row>
+            <Row label="Destructive">
+              <Button variant="destructive">Raise Dispute</Button>
+              <Button variant="destructive" loading>Submitting…</Button>
+            </Row>
+            <Row label="Ghost">
+              <Button variant="ghost">View details</Button>
+            </Row>
+            <Row label="Full width">
+              <div style={{ width: '100%' }}>
+                <Button fullWidth>Pay Security Deposit</Button>
+              </div>
+            </Row>
+          </ComponentShowcase>
+        </DCArtboard>
+
+        <DCArtboard id="inputs" label="Text inputs" width={420} height={620}>
+          <ComponentShowcase title="Text inputs">
+            <TextInput label="Mobile Number" placeholder="98765 43210" prefix="+91" hint="We'll send a 6-digit OTP" />
+            <TextInput label="Monthly Rent" prefix="₹" placeholder="25,000" />
+            <TextInput label="Property Address" placeholder="12 MG Road…" multiline rows={3} />
+            <TextInput label="Mobile Number" value="12345" prefix="+91" error="Enter a valid 10-digit number." />
+          </ComponentShowcase>
+        </DCArtboard>
+
+        <DCArtboard id="status-chips" label="Status chips" width={420} height={420}>
+          <ComponentShowcase title="Status chips">
+            <Row label="">
+              <StatusChip status="DRAFT" />
+              <StatusChip status="PENDING_DEPOSIT" />
+              <StatusChip status="ACTIVE" />
+            </Row>
+            <Row label="">
+              <StatusChip status="RELEASING" />
+              <StatusChip status="CLOSED" />
+              <StatusChip status="DISPUTED" />
+            </Row>
+            <Row label="Small">
+              <StatusChip status="ACTIVE" size="sm" />
+              <StatusChip status="PENDING_DEPOSIT" size="sm" />
+              <StatusChip status="DISPUTED" size="sm" />
+            </Row>
+            <Row label="KYC badges">
+              <KycBadge state="pending" />
+              <KycBadge state="verified" />
+              <KycBadge state="rejected" />
+            </Row>
+          </ComponentShowcase>
+        </DCArtboard>
+
+        <DCArtboard id="agreement-card" label="Agreement card" width={420} height={420}>
+          <ComponentShowcase title="Agreement card">
+            <AgreementCard agreement={window.SAMPLE_AGREEMENTS[0]} viewerRole="tenant" />
+            <AgreementCard agreement={window.SAMPLE_AGREEMENTS[1]} viewerRole="owner" />
+          </ComponentShowcase>
+        </DCArtboard>
+
+        <DCArtboard id="reputation" label="Reputation & OTP" width={420} height={540}>
+          <ComponentShowcase title="Reputation & OTP">
+            <SubLabel>With reviews</SubLabel>
+            <ReputationBadge score={4.8} reviews={12} />
+            <SubLabel>No reviews yet</SubLabel>
+            <ReputationBadge score={0} reviews={0} hasReviews={false} />
+            <SubLabel>OTP input — filled</SubLabel>
+            <OtpInput value="482917" onChange={() => {}} />
+            <SubLabel>OTP input — error</SubLabel>
+            <OtpInput value="123456" onChange={() => {}} error />
+          </ComponentShowcase>
+        </DCArtboard>
+
+        <DCArtboard id="banners" label="Banners" width={420} height={520}>
+          <ComponentShowcase title="Banners">
+            <Banner variant="info">Review the agreement terms carefully before confirming.</Banner>
+            <Banner variant="success">Your deposit is locked in escrow.</Banner>
+            <Banner variant="warning" title="KYC required">Complete identity verification to create agreements.</Banner>
+            <Banner variant="danger" title="Raise a Formal Dispute">An admin will review your case and determine how the deposit is distributed.</Banner>
+          </ComponentShowcase>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="marketplace" title="Marketplace" subtitle="Browse listings · property detail · add listing · interests. Spans Tab 2 across both tenant and owner roles.">
+        <DCArtboard id="browse-tenant" label="A · Browse (tenant)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="A Browse · tenant populated" style={{ height: '100%' }}>
+              <BrowseScreen state="populated" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="browse-empty" label="A · Browse — no results" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="A Browse · empty" style={{ height: '100%' }}>
+              <BrowseScreen state="empty" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="browse-loading" label="A · Browse — loading" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="A Browse · loading skeletons" style={{ height: '100%' }}>
+              <BrowseScreen state="loading" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="property-detail" label="B · Property detail (tenant)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="B Property Detail · tenant idle" style={{ height: '100%' }}>
+              <PropertyDetailScreen propertyId="p1" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="property-detail-sent" label="B · Property detail — interest sent" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="B Property Detail · interest sent" style={{ height: '100%' }}>
+              <PropertyDetailScreen propertyId="p1" initialState="sent" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="property-detail-2" label="B · Property detail (Koramangala)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="B Property Detail · p2" style={{ height: '100%' }}>
+              <PropertyDetailScreen propertyId="p2" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="my-listings" label="C · My Listings (owner)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="C My Listings · populated" style={{ height: '100%' }}>
+              <MyListingsArtboardWrapper />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="my-listings-empty" label="C · My Listings — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="C My Listings · empty" style={{ height: '100%' }}>
+              <MyListingsEmptyArtboardWrapper />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="add-property" label="D · Add Property — empty" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="D Add Property · empty" style={{ height: '100%' }}>
+              <AddPropertyScreen kycVerified />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="add-property-kycgate" label="D · Add Property — KYC gate" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="D Add Property · kyc gate" style={{ height: '100%' }}>
+              <AddPropertyScreen kycVerified={false} />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="property-owner" label="E · Property detail (owner)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="E Property Detail · owner" style={{ height: '100%' }}>
+              <PropertyDetailOwnerScreen propertyId="p1" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="interests" label="F · Interest requests" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="F Interest Requests" style={{ height: '100%' }}>
+              <InterestRequestsScreen propertyId="p1" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="my-interests" label="G · My Interests (tenant)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="G My Interests · populated" style={{ height: '100%' }}>
+              <MyInterestsArtboardWrapper />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="notifications" label="Tab 3 · Notifications" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="Tab 3 Notifications" style={{ height: '100%' }}>
+              <NotificationsScreen />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+        <DCArtboard id="kyc-gate-interest" label="Modal · KYC gate (interest)" width={FW} height={FH}>
+          <StaticFrame>
+            <div data-screen-label="Modal · KYC gate interest" style={{ height: '100%' }}>
+              <PropertyDetailScreen propertyId="p1" kycState="pending" />
+              <KycGateOverlayForPreview mode="interest" />
+            </div>
+          </StaticFrame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="brand" title="Brand & tokens" subtitle="Color tokens, type ramp, and the visual rules behind every screen.">
+        <DCArtboard id="palette" label="Colour palette" width={620} height={460}>
+          <PaletteSwatches />
+        </DCArtboard>
+        <DCArtboard id="type" label="Type ramp" width={520} height={520}>
+          <TypeRamp />
+        </DCArtboard>
+        <DCArtboard id="identity" label="Identity" width={420} height={460}>
+          <IdentityCard />
+        </DCArtboard>
+      </DCSection>
+
+      <DCPostIt top={0} left={460} width={240} rotate={-3}>
+        Two roles, one product: the tenant flow is the default. Toggle viewerRole on Detail screens to see owner-side actions.
+      </DCPostIt>
+      <DCPostIt top={20} right={40} width={220} rotate={2}>
+        The word <b>"blockchain"</b> appears nowhere user-facing — every reference is "secure escrow."
+      </DCPostIt>
+    </DesignCanvas>
+  );
+}
+
+// ─── helpers for component showcase ─────────────────────────
+function MyListingsArtboardWrapper() {
+  return <BrowseScreen forceRole="owner" initialSegment="mine" />;
+}
+function MyListingsEmptyArtboardWrapper() {
+  return <BrowseScreen forceRole="owner" initialSegment="mine" bodyState="empty" />;
+}
+function MyInterestsArtboardWrapper() {
+  return <BrowseScreen forceRole="tenant" initialSegment="interests" />;
+}
+function KycGateOverlayForPreview({ mode = 'interest' }) {
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <KycGateModal open onClose={() => {}} onCompleteKyc={() => {}} mode={mode} />
+    </div>
+  );
+}
+function ComponentShowcase({ title, children }) {
+  return (
+    <div style={{
+      width: '100%', height: '100%', padding: 28,
+      background: '#fff', overflow: 'auto',
+      display: 'flex', flexDirection: 'column', gap: 16,
+      fontFamily: window.TN.font.family,
+    }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.6 }}>{title}</div>
+      {children}
+    </div>
+  );
+}
+function Row({ label, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {label && <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</div>}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>{children}</div>
+    </div>
+  );
+}
+function SubLabel({ children }) {
+  return <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 4 }}>{children}</div>;
+}
+
+// ─── palette / type / identity panels ───────────────────────
+function PaletteSwatches() {
+  const groups = [
+    { name: 'Primary', items: [
+      ['Primary', '#2563EB', '#fff'],
+      ['Primary Light', '#EFF6FF', '#1E40AF'],
+    ]},
+    { name: 'Neutral', items: [
+      ['Text Primary', '#111827', '#fff'],
+      ['Text Secondary', '#6B7280', '#fff'],
+      ['Text Disabled', '#9CA3AF', '#fff'],
+      ['Border', '#E5E7EB', '#374151'],
+      ['Surface', '#F9FAFB', '#374151'],
+    ]},
+    { name: 'Status', items: [
+      ['Success', '#16A34A', '#fff'],
+      ['Warning', '#D97706', '#fff'],
+      ['Destructive', '#DC2626', '#fff'],
+    ]},
+  ];
+  return (
+    <div style={{ padding: 28, background: '#fff', height: '100%', overflow: 'auto', fontFamily: window.TN.font.family }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 18 }}>Palette</div>
+      {groups.map((g) => (
+        <div key={g.name} style={{ marginBottom: 22 }}>
+          <div style={{ fontSize: 11, fontWeight: 500, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 }}>{g.name}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8 }}>
+            {g.items.map(([name, hex, fg]) => (
+              <div key={hex} style={{ background: hex, color: fg, padding: '14px 14px 12px', borderRadius: 10, border: hex === '#FFFFFF' || hex === '#F9FAFB' ? '1px solid #E5E7EB' : 'none' }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
+                <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2, fontFamily: 'ui-monospace, "SF Mono", monospace' }}>{hex}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TypeRamp() {
+  const sizes = [
+    [30, 700, 'Display · 30/700', 'TrustNest'],
+    [24, 700, 'Heading 1 · 24/700', 'Enter OTP'],
+    [20, 700, 'Heading 2 · 20/700', 'Payment Confirmed'],
+    [17, 600, 'Body large · 17/600', 'Pay Security Deposit'],
+    [15, 400, 'Body · 15/400', '12 MG Road, Indiranagar, Bengaluru'],
+    [13, 500, 'Caption · 13/500', 'Property Address'],
+    [11, 500, 'Micro · 11/500', 'PENDING DEPOSIT'],
+  ];
+  return (
+    <div style={{ padding: 28, background: '#fff', height: '100%', fontFamily: window.TN.font.family }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 22 }}>Type ramp</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        {sizes.map(([sz, w, label, sample]) => (
+          <div key={label}>
+            <div style={{ fontSize: 11, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4, fontFamily: 'ui-monospace, "SF Mono", monospace' }}>{label}</div>
+            <div style={{ fontSize: sz, fontWeight: w, color: '#111827', letterSpacing: sz > 20 ? -0.5 : -0.2, lineHeight: 1.25 }}>{sample}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function IdentityCard() {
+  return (
+    <div style={{
+      padding: 28, background: '#fff', height: '100%',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18,
+      fontFamily: window.TN.font.family, textAlign: 'center',
+    }}>
+      <Logo size={80} />
+      <div>
+        <div style={{ fontSize: 32, fontWeight: 700, color: '#111827', letterSpacing: -0.8 }}>TrustNest</div>
+        <div style={{ fontSize: 15, color: '#6B7280', marginTop: 6, maxWidth: 280, lineHeight: 1.5 }}>
+          Transparent rental agreements, powered by secure escrow.
+        </div>
+      </div>
+      <div style={{
+        display: 'inline-flex', gap: 8, padding: '8px 14px',
+        background: '#EFF6FF', borderRadius: 999, fontSize: 13, fontWeight: 600, color: '#1E40AF',
+      }}>
+        For Indian residential rentals
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

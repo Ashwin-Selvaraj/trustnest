@@ -135,10 +135,9 @@ export default function PaymentScreen(): React.ReactElement {
             Your deposit has been locked in escrow. Your agreement is now active.
           </Text>
           <Button
-            label="View Agreement"
             variant="primary"
             onPress={() => router.replace(`/agreement/${id}`)}
-          />
+          >View Agreement</Button>
         </View>
       )}
 
@@ -152,12 +151,11 @@ export default function PaymentScreen(): React.ReactElement {
 
       {(paymentState === 'idle' || paymentState === 'failed') && (
         <Button
-          label="Initiate Payment"
           variant="primary"
           fullWidth
           loading={false}
           onPress={() => void handleInitiate()}
-        />
+        >Initiate Payment</Button>
       )}
 
       {paymentState === 'awaiting' && paymentInfo && (
@@ -165,30 +163,27 @@ export default function PaymentScreen(): React.ReactElement {
           <Text style={styles.upiTitle}>Open your UPI app to pay</Text>
           <Text style={styles.orderId}>Order: {paymentInfo.orderId}</Text>
           <Button
-            label="Open UPI App"
             variant="primary"
             fullWidth
             onPress={() => void handleOpenUPI()}
-          />
+          >Open UPI App</Button>
           <Button
-            label="I've Paid — Check Status"
             variant="secondary"
             fullWidth
             onPress={startPolling}
-          />
+          >I've Paid — Check Status</Button>
         </View>
       )}
 
       {paymentState !== 'confirmed' && (
         <Button
-          label="Cancel"
           variant="secondary"
           fullWidth
           onPress={() => {
             if (pollInterval.current) clearInterval(pollInterval.current);
             router.back();
           }}
-        />
+        >Cancel</Button>
       )}
     </ScrollView>
   );

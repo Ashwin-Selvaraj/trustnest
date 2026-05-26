@@ -1,169 +1,262 @@
+/**
+ * Button — primary | secondary | destructive | ghost
+ *
+ * Props API mirrors design-reference/primitives.jsx Button exactly
+ * (with `onPress` in place of `onClick` and `children` for content).
+ *
+ * @example
+ * ```tsx
+ * <Button variant="primary" onPress={handlePay}>Pay Deposit</Button>
+ * <Button variant="secondary" onPress={handleCancel}>Cancel</Button>
+ * <Button variant="destructive" loading={isSubmitting}>Raise Dispute</Button>
+ * <Button variant="ghost" onPress={handleSkip}>Skip for now</Button>
+ * <Button variant="primary" fullWidth size="lg" onPress={handleContinue}>Continue</Button>
+ * ```
+ */
+
 import * as React from 'react';
 import {
-  TouchableOpacity,
+  Pressable,
   Text,
+  View,
+  Animated,
   ActivityIndicator,
   StyleSheet,
-  type TouchableOpacityProps,
+  type PressableProps,
   type StyleProp,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { colors, borderRadius, fontSize, fontWeight } from '../theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'destructive';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface ButtonProps extends Omit<TouchableOpacityProps, 'style'> {
-  /** Button label text. */
-  label: string;
-  /** Visual variant. Defaults to `'primary'`. */
+export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'ghost';
+export type ButtonSize    = 'sm' | 'md' | 'lg';
+
+export interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
+  /** Button content — usually a string, but accepts any ReactNode. */
+  children?: React.ReactNode;
+  /** Visual variant. Default: `'primary'`. */
   variant?: ButtonVariant;
-  /** Size preset. Defaults to `'md'`. */
+  /** Size preset controlling height and font size. Default: `'md'`. */
   size?: ButtonSize;
-  /** Shows a loading spinner and disables interaction. */
+  /** Shows a spinner and disables interaction. */
   loading?: boolean;
-  /** Full-width layout. */
+  /** Stretches the button to fill its parent container. */
   fullWidth?: boolean;
-  /** Override container style. */
+  /** Override button container style (applied to the Pressable). */
   style?: StyleProp<ViewStyle>;
-  /** Override label style. */
+  /** Override label text style. */
   labelStyle?: StyleProp<TextStyle>;
 }
 
-/**
- * Pressable button with three visual variants (primary, secondary, destructive)
- * and three size presets.
- *
- * @example
- * ```tsx
- * <Button label="Pay Deposit" variant="primary" onPress={handlePay} />
- * <Button label="Cancel" variant="secondary" onPress={handleCancel} />
- * <Button label="Raise Dispute" variant="destructive" loading={isSubmitting} />
- * ```
- */
+// ─── Per-variant config ───────────────────────────────────────────────────────
+
+interface VariantConfig {
+  bg:           string;
+  fg:           string;
+  border:       string;
+  pressedBg:    string;
+  spinnerColor: string;
+}
+
+const VARIANT: Record<ButtonVariant, VariantConfig> = {
+  primary: {
+    bg:           colors.primary,
+    fg:           '#fff',
+    border:       colors.primary,
+    pressedBg:    colors.primaryDark,   // #1D4ED8
+    spinnerColor: '#fff',
+  },
+  secondary: {
+    bg:           '#fff',
+    fg:           colors.text,
+    border:       colors.borderStrong,  // #D1D5DB — spec uses borderStrong, not border
+    pressedBg:    colors.surface,       // #F9FAFB
+    spinnerColor: colors.primary,
+  },
+  destructive: {
+    bg:           colors.danger,
+    fg:           '#fff',
+    border:       colors.danger,
+    pressedBg:    colors.dangerDark,    // #991B1B — spec: '#B91C1C' ≈ dangerDark
+    spinnerColor: '#fff',
+  },
+  ghost: {
+    bg:           'transparent',
+    fg:           colors.primary,
+    border:       'transparent',
+    pressedBg:    colors.primaryLight,  // #EFF6FF
+    spinnerColor: colors.primary,
+  },
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function Button({
-  label,
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  fullWidth = false,
+  children,
+  variant      = 'primary',
+  size         = 'md',
+  loading      = false,
+  fullWidth    = false,
   disabled,
   style,
   labelStyle,
+  onPress,
+  onPressIn,
+  onPressOut,
   ...rest
 }: ButtonProps): React.ReactElement {
-  const isDisabled = disabled || loading;
+  const isDisabled = disabled === true || loading;
+  const v = VARIANT[variant];
 
-  const containerStyle: StyleProp<ViewStyle> = [
-    styles.base,
-    styles[variant],
-    styles[`size_${size}`],
-    fullWidth && styles.fullWidth,
-    isDisabled && styles.disabled,
-    isDisabled && styles[`${variant}Disabled`],
-    style,
-  ];
+  // ── Scale animation (spec: transform scale(0.985) on press) ────────────────
+  const scale = React.useRef(new Animated.Value(1)).current;
 
-  const textStyle: StyleProp<TextStyle> = [
-    styles.label,
-    styles[`${variant}Label`],
-    styles[`sizeLabel_${size}`],
-    isDisabled && styles.labelDisabled,
-    labelStyle,
-  ];
+  const handlePressIn = React.useCallback(
+    (e: Parameters<NonNullable<PressableProps['onPressIn']>>[0]) => {
+      if (!isDisabled) {
+        Animated.timing(scale, {
+          toValue: 0.985,
+          duration: 80,
+          useNativeDriver: true,
+        }).start();
+      }
+      onPressIn?.(e);
+    },
+    [isDisabled, scale, onPressIn],
+  );
+
+  const handlePressOut = React.useCallback(
+    (e: Parameters<NonNullable<PressableProps['onPressOut']>>[0]) => {
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }).start();
+      onPressOut?.(e);
+    },
+    [scale, onPressOut],
+  );
 
   return (
-    <TouchableOpacity
-      style={containerStyle}
-      disabled={isDisabled}
-      activeOpacity={0.75}
-      {...rest}
+    // Outer Animated.View owns the scale transform.
+    // fullWidth is applied here so the wrapper also takes full width.
+    <Animated.View
+      style={[
+        fullWidth && styles.fullWidth,
+        { transform: [{ scale }] },
+      ]}
     >
-      {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === 'secondary' ? colors.primary : colors.white}
-        />
-      ) : (
-        <Text style={textStyle}>{label}</Text>
-      )}
-    </TouchableOpacity>
+      <Pressable
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={isDisabled ? undefined : onPress}
+        disabled={isDisabled}
+        style={({ pressed }) => [
+          styles.base,
+          // Height preset
+          styles[`size_${size}` as 'size_sm' | 'size_md' | 'size_lg'],
+          // Static variant colours
+          {
+            backgroundColor: v.bg,
+            borderColor: v.border,
+          },
+          // Pressed colour override (replaces bg only, border stays)
+          pressed && !isDisabled && { backgroundColor: v.pressedBg },
+          // Width
+          fullWidth && styles.fullWidth,
+          !fullWidth && styles.minWidth,
+          // Disabled opacity
+          isDisabled && styles.disabled,
+          // Consumer override
+          style,
+        ]}
+        {...rest}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={v.spinnerColor} />
+        ) : (
+          <View style={styles.inner}>
+            {typeof children === 'string' ? (
+              <Text
+                style={[
+                  styles.label,
+                  styles[`labelSize_${size}` as 'labelSize_sm' | 'labelSize_md' | 'labelSize_lg'],
+                  { color: v.fg },
+                  labelStyle,
+                ]}
+                numberOfLines={1}
+              >
+                {children}
+              </Text>
+            ) : (
+              children
+            )}
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   base: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
+    borderRadius: borderRadius.md,    // 12 — matches spec R.md
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  inner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   fullWidth: {
     width: '100%',
   },
-  // Variants
-  primary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  minWidth: {
+    minWidth: 120,                    // spec: minWidth 120 when not fullWidth
   },
-  secondary: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-  },
-  destructive: {
-    backgroundColor: colors.destructive,
-    borderColor: colors.destructive,
-  },
-  // Disabled per variant
   disabled: {
     opacity: 0.5,
   },
-  primaryDisabled: {},
-  secondaryDisabled: {},
-  destructiveDisabled: {},
-  // Sizes
+
+  // ── Size presets (height matches spec exactly) ────────────────────────────
   size_sm: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    minHeight: 32,
+    height: 36,
+    paddingHorizontal: 14,
   },
   size_md: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.base,
-    minHeight: 44,
+    height: 48,
+    paddingHorizontal: 20,
   },
   size_lg: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    minHeight: 52,
+    height: 56,
+    paddingHorizontal: 24,
   },
-  // Labels
+
+  // ── Label typography ──────────────────────────────────────────────────────
   label: {
-    fontWeight: typography.fontWeightSemiBold,
+    fontWeight: fontWeight.semibold,  // 600
+    letterSpacing: -0.2,
   },
-  primaryLabel: {
-    color: colors.white,
+  labelSize_sm: {
+    fontSize: fontSize.sm,            // 13
+    lineHeight: 18,
   },
-  secondaryLabel: {
-    color: colors.text,
+  labelSize_md: {
+    fontSize: fontSize.base,          // 17 — spec uses F.sizes.base for md
+    lineHeight: 24,
   },
-  destructiveLabel: {
-    color: colors.white,
-  },
-  labelDisabled: {},
-  sizeLabel_sm: {
-    fontSize: typography.fontSizeSm,
-    lineHeight: typography.lineHeightSm,
-  },
-  sizeLabel_md: {
-    fontSize: typography.fontSizeBase,
-    lineHeight: typography.lineHeightBase,
-  },
-  sizeLabel_lg: {
-    fontSize: typography.fontSizeLg,
-    lineHeight: typography.lineHeightLg,
+  labelSize_lg: {
+    fontSize: fontSize.base,          // 17 — same as md, taller button = more padding
+    lineHeight: 24,
   },
 });
