@@ -30,8 +30,8 @@ export default function PhoneScreen(): React.ReactElement {
     setIsLoading(true);
     setError(null);
     try {
-      await authApi.sendOtp({ phone: `+91${normalized}` });
-      router.push({ pathname: '/(auth)/otp', params: { phone: `+91${normalized}` } });
+      const { sessionId } = await authApi.sendOtp({ phone: `+91${normalized}` });
+      router.push({ pathname: '/(auth)/otp', params: { phone: `+91${normalized}`, sessionId } });
     } catch (err: unknown) {
       setError(err instanceof ApiError ? err.message : 'Failed to send OTP. Try again.');
     } finally {

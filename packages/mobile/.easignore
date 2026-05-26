@@ -1,0 +1,23 @@
+# Exclude monorepo packages not needed for the mobile build
+../../packages/backend
+../../packages/contracts
+../../packages/sdk
+
+# Exclude large dev artifacts
+../../node_modules/.cache
+../../packages/backend/node_modules
+../../packages/contracts/node_modules
+../../packages/contracts/typechain-types
+../../packages/sdk/node_modules
+
+# Exclude git and editor files
+../../.git
+**/.DS_Store
+**/Thumbs.db
+
+# Exclude test and docs
+**/test
+**/__tests__
+**/coverage
+**/*.test.ts
+**/*.spec.ts
