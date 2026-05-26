@@ -1,141 +1,220 @@
-import * as React from 'react';
-import { View, Text, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
-import { colors, spacing, typography } from '../theme';
-
-export interface ReputationBadgeProps {
-  /**
-   * Average score on a 1–5 scale. Accepts fractional values (e.g. 4.5).
-   * Pass `null` or `undefined` for new users with no ratings.
-   */
-  averageScore?: number | null;
-  /** Total number of completed agreements rated. */
-  tokenCount?: number;
-  /** Compact mode shows only the star and numeric average. */
-  compact?: boolean;
-  /** Override container style. */
-  style?: StyleProp<ViewStyle>;
-}
-
 /**
- * Displays a star rating badge with the average score and review count.
+ * ReputationBadge — on-chain SBT reputation display.
+ * Shows the SBT mark, numeric score, fractional star row, and review count.
+ * Matches design-reference/primitives.jsx ReputationBadge exactly.
  *
  * @example
  * ```tsx
- * <ReputationBadge averageScore={4.5} tokenCount={12} />
- * <ReputationBadge averageScore={null} tokenCount={0} />
- * <ReputationBadge averageScore={3.8} tokenCount={5} compact />
+ * <ReputationBadge score={4.5} reviews={12} />
+ * <ReputationBadge hasReviews={false} />
  * ```
  */
-export function ReputationBadge({
-  averageScore,
-  tokenCount = 0,
-  compact = false,
-  style,
-}: ReputationBadgeProps): React.ReactElement {
-  const hasScore = averageScore != null && averageScore > 0;
-  const displayScore = hasScore ? averageScore!.toFixed(1) : '–';
 
-  if (compact) {
-    return (
-      <View style={[styles.compactContainer, style]}>
-        <Text style={styles.starIcon}>★</Text>
-        <Text style={styles.compactScore}>{displayScore}</Text>
-      </View>
-    );
-  }
+import * as React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { colors, borderRadius, fontSize, fontWeight } from '../theme';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface ReputationBadgeProps {
+  /**
+   * Average score on a 1–5 scale (accepts decimals, e.g. 4.5).
+   * Ignored when `hasReviews` is false.
+   */
+  score?:       number;
+  /** Number of completed agreements rated. */
+  reviews?:     number;
+  /**
+   * Whether the user has any reviews.  Pass `false` to show the empty-state
+   * copy.  Defaults to `true`.
+   */
+  hasReviews?:  boolean;
+  style?:       StyleProp<ViewStyle>;
+}
+
+// ─── SBT hexagon mark ────────────────────────────────────────────────────────
+
+function SbtMark(): React.ReactElement {
   return (
-    <View style={[styles.container, style]}>
-      <View style={styles.row}>
-        <Text style={styles.starIcon}>★</Text>
-        <Text style={styles.score}>{displayScore}</Text>
-      </View>
-      <Text style={styles.count}>
-        {tokenCount === 0
-          ? 'No reviews yet'
-          : `${tokenCount} review${tokenCount !== 1 ? 's' : ''}`}
-      </Text>
-      {hasScore ? <StarBar score={averageScore!} /> : null}
-    </View>
+    <Svg width={28} height={28} viewBox="0 0 28 28" fill="none">
+      {/* Outer hexagon */}
+      <Path
+        d="M14 3L24 8.5V19.5L14 25L4 19.5V8.5L14 3Z"
+        stroke="#fff"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        opacity={0.95}
+      />
+      {/* Inner hexagon (filled) */}
+      <Path
+        d="M14 9.5L18.5 12V17L14 19.5L9.5 17V12L14 9.5Z"
+        fill="#fff"
+        opacity={0.95}
+      />
+    </Svg>
   );
 }
 
-function StarBar({ score }: { score: number }): React.ReactElement {
+// ─── Fractional star row ──────────────────────────────────────────────────────
+
+const STAR_PATH = 'M7 1L8.8 5L13 5.6L10 8.8L10.8 13L7 11L3.2 13L4 8.8L1 5.6L5.2 5L7 1Z';
+const STAR_GOLD   = '#F59E0B';
+const STAR_EMPTY  = colors.border;
+
+function StarFull({ size, color }: { size: number; color: string }) {
   return (
-    <View style={styles.starBar}>
-      {[1, 2, 3, 4, 5].map((star) => {
-        const filled = score >= star;
-        const half = !filled && score >= star - 0.5;
+    <Svg width={size} height={size} viewBox="0 0 14 14">
+      <Path d={STAR_PATH} fill={color} />
+    </Svg>
+  );
+}
+
+function Stars({
+  value = 0,
+  size  = 14,
+}: {
+  value?: number;
+  size?:  number;
+}): React.ReactElement {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((i) => {
+        const fill = Math.max(0, Math.min(1, value - (i - 1)));
         return (
-          <Text
-            key={star}
-            style={[
-              styles.starBarItem,
-              filled
-                ? styles.starFilled
-                : half
-                  ? styles.starHalf
-                  : styles.starEmpty,
-            ]}
-          >
-            ★
-          </Text>
+          <View key={i} style={{ width: size, height: size }}>
+            {/* Empty star layer */}
+            <StarFull size={size} color={STAR_EMPTY} />
+            {/* Clipped gold layer */}
+            {fill > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top:      0,
+                  left:     0,
+                  width:    size * fill,
+                  height:   size,
+                  overflow: 'hidden',
+                }}
+              >
+                <StarFull size={size} color={STAR_GOLD} />
+              </View>
+            )}
+          </View>
         );
       })}
     </View>
   );
 }
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export function ReputationBadge({
+  score      = 0,
+  reviews    = 0,
+  hasReviews = true,
+  style,
+}: ReputationBadgeProps): React.ReactElement {
+  // Round to nearest 0.5 for star display (matches spec)
+  const starValue = Math.round((score || 0) * 2) / 2;
+
+  return (
+    <View style={[styles.container, style]}>
+      {/* Blue gradient SBT square */}
+      <View style={styles.sbtSquare}>
+        <SbtMark />
+      </View>
+
+      {/* Right column */}
+      <View style={styles.infoCol}>
+        {hasReviews ? (
+          <>
+            {/* Score row */}
+            <View style={styles.scoreRow}>
+              <Text style={styles.scoreText}>{score.toFixed(1)}</Text>
+              <Text style={styles.scoreMax}> / 5.0</Text>
+            </View>
+            <Stars value={starValue} size={14} />
+            <Text style={styles.reviewText}>
+              {reviews} review{reviews !== 1 ? 's' : ''} · verified on-record
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.emptyTitle}>No reviews yet</Text>
+            <Text style={styles.emptyBody}>
+              Your reputation grows with each completed lease.
+            </Text>
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.xs,
-  },
-  row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    alignItems:    'center',
+    gap:           14,
   },
-  starIcon: {
-    fontSize: 18,
-    color: colors.warning,
+  sbtSquare: {
+    width:          56,
+    height:         56,
+    borderRadius:   borderRadius.md,    // 12
+    // spec: linear-gradient(135deg, primary → #1E40AF). Using solid primary.
+    backgroundColor: colors.primary,
+    alignItems:     'center',
+    justifyContent: 'center',
+    flexShrink:     0,
+    shadowColor:    '#2563EB',
+    shadowOffset:   { width: 0, height: 2 },
+    shadowOpacity:  0.25,
+    shadowRadius:   6,
+    elevation:      3,
+  },
+  infoCol: {
+    flexDirection: 'column',
+    gap:           2,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems:    'baseline',
+    gap:           0,
+  },
+  scoreText: {
+    fontSize:      fontSize.xxl,        // 30
+    fontWeight:    fontWeight.bold,
+    color:         colors.text,
+    letterSpacing: -0.6,
+    lineHeight:    30,
+  },
+  scoreMax: {
+    fontSize:   fontSize.md,            // 15
+    color:      colors.textSec,
     lineHeight: 22,
   },
-  score: {
-    fontSize: typography.fontSizeLg,
-    fontWeight: typography.fontWeightBold,
-    color: colors.text,
+  reviewText: {
+    fontSize:   fontSize.sm,            // 13
+    color:      colors.textSec,
+    marginTop:  2,
   },
-  count: {
-    fontSize: typography.fontSizeSm,
-    color: colors.textSecondary,
+  emptyTitle: {
+    fontSize:   fontSize.base,          // 17
+    fontWeight: fontWeight.semibold,
+    color:      colors.text,
   },
-  starBar: {
-    flexDirection: 'row',
-    gap: 2,
-    marginTop: 2,
-  },
-  starBarItem: {
-    fontSize: 16,
-  },
-  starFilled: {
-    color: colors.warning,
-  },
-  starHalf: {
-    color: colors.warning,
-    opacity: 0.5,
-  },
-  starEmpty: {
-    color: colors.border,
-  },
-  // Compact
-  compactContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  compactScore: {
-    fontSize: typography.fontSizeBase,
-    fontWeight: typography.fontWeightSemiBold,
-    color: colors.text,
+  emptyBody: {
+    fontSize:   fontSize.sm,            // 13
+    color:      colors.textSec,
+    lineHeight: 19,
   },
 });

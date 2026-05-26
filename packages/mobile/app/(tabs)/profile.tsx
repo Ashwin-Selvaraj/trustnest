@@ -93,8 +93,9 @@ export default function ProfileScreen(): React.ReactElement {
           <ActivityIndicator color="#2563EB" />
         ) : (
           <ReputationBadge
-            averageScore={reputation ? reputation.averageScore : null}
-            tokenCount={reputation?.totalReviews ?? 0}
+            score={reputation?.averageScore ?? 0}
+            reviews={reputation?.totalReviews ?? 0}
+            hasReviews={!!reputation && (reputation.totalReviews ?? 0) > 0}
           />
         )}
       </View>
@@ -119,12 +120,11 @@ export default function ProfileScreen(): React.ReactElement {
 
       {/* Sign Out */}
       <Button
-        label="Sign Out"
         variant="secondary"
         fullWidth
         onPress={handleSignOut}
         style={styles.signOut}
-      />
+      >Sign Out</Button>
     </ScrollView>
   );
 }

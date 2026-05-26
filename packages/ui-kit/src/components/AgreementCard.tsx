@@ -132,7 +132,7 @@ export function AgreementCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.md,   // 12 — spec uses R.md for cards
     borderWidth: 1,
     borderColor: colors.border,
     padding: spacing.base,

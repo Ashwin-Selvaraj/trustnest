@@ -171,20 +171,18 @@ export default function CreateAgreementScreen(): React.ReactElement {
         />
 
         <Button
-          label="Create Agreement"
           variant="primary"
           fullWidth
           loading={isLoading}
           onPress={() => void handleSubmit()}
           style={styles.submitButton}
-        />
+        >Create Agreement</Button>
 
         <Button
-          label="Cancel"
           variant="secondary"
           fullWidth
           onPress={() => router.back()}
-        />
+        >Cancel</Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );

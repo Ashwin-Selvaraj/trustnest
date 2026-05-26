@@ -90,18 +90,16 @@ export default function ConfirmAgreementScreen(): React.ReactElement {
       </View>
 
       <Button
-        label="Confirm Agreement"
         variant="primary"
         fullWidth
         loading={isConfirming}
         onPress={() => void handleConfirm()}
-      />
+      >Confirm Agreement</Button>
       <Button
-        label="Go Back"
         variant="secondary"
         fullWidth
         onPress={() => router.back()}
-      />
+      >Go Back</Button>
     </ScrollView>
   );
 }

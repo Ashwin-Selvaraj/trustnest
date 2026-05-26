@@ -56,7 +56,7 @@ export default function AgreementDetailScreen(): React.ReactElement {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error ?? 'Agreement not found'}</Text>
-        <Button label="Go Back" variant="secondary" onPress={() => router.back()} />
+        <Button variant="secondary" onPress={() => router.back()}>Go Back</Button>
       </View>
     );
   }
@@ -79,22 +79,20 @@ export default function AgreementDetailScreen(): React.ReactElement {
     if (status === AgreementStatus.DRAFT && !hasUserConfirmed) {
       return (
         <Button
-          label="Confirm Agreement"
           variant="primary"
           fullWidth
           onPress={() => router.push(`/agreement/${id}/confirm`)}
-        />
+        >Confirm Agreement</Button>
       );
     }
 
     if (status === AgreementStatus.PENDING_DEPOSIT && isUserTenant) {
       return (
         <Button
-          label="Pay Security Deposit"
           variant="primary"
           fullWidth
           onPress={() => router.push(`/agreement/${id}/payment`)}
-        />
+        >Pay Security Deposit</Button>
       );
     }
 
@@ -103,7 +101,6 @@ export default function AgreementDetailScreen(): React.ReactElement {
         <View style={styles.actionsColumn}>
           {isUserOwner && (
             <Button
-              label="Release Deposit"
               variant="primary"
               fullWidth
               onPress={() => {
@@ -124,14 +121,13 @@ export default function AgreementDetailScreen(): React.ReactElement {
                   ],
                 );
               }}
-            />
+            >Release Deposit</Button>
           )}
           <Button
-            label="Raise Dispute"
             variant="destructive"
             fullWidth
             onPress={() => router.push(`/agreement/${id}/dispute`)}
-          />
+          >Raise Dispute</Button>
         </View>
       );
     }
@@ -140,11 +136,10 @@ export default function AgreementDetailScreen(): React.ReactElement {
       // Re-use "hasUserConfirmed" to check if already rated
       return (
         <Button
-          label="Rate Experience"
           variant="secondary"
           fullWidth
           onPress={() => router.push(`/agreement/${id}/confirm`)}
-        />
+        >Rate Experience</Button>
       );
     }
 
@@ -205,7 +200,7 @@ export default function AgreementDetailScreen(): React.ReactElement {
       {agreement.status === AgreementStatus.CLOSED && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reputation</Text>
-          <ReputationBadge averageScore={null} tokenCount={0} compact />
+          <ReputationBadge hasReviews={false} />
         </View>
       )}
 

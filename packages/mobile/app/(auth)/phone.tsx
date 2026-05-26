@@ -70,13 +70,12 @@ export default function PhoneScreen(): React.ReactElement {
           />
 
           <Button
-            label="Send OTP"
             variant="primary"
             fullWidth
             loading={isLoading}
             onPress={() => void handleSendOtp()}
             style={styles.button}
-          />
+          >Send OTP</Button>
         </View>
 
         <Text style={styles.disclaimer}>
