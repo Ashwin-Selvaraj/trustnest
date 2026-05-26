@@ -7,11 +7,11 @@ export interface SendOtpRequest {
 }
 
 export interface SendOtpResponse {
-  message: string;
+  sessionId: string;
 }
 
 export interface VerifyOtpRequest {
-  phone: string;
+  sessionId: string;
   otp: string;
 }
 

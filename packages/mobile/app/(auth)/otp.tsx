@@ -19,7 +19,7 @@ import { ApiError } from '@/api/client';
  * Receives `phone` as a route param from the phone screen.
  */
 export default function OtpScreen(): React.ReactElement {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, sessionId } = useLocalSearchParams<{ phone: string; sessionId: string }>();
   const { signIn, setUser } = useAuth();
 
   const [otp, setOtp] = React.useState('');
@@ -39,7 +39,7 @@ export default function OtpScreen(): React.ReactElement {
     setIsLoading(true);
     setError(null);
     try {
-      const tokens = await authApi.verifyOtp({ phone: phone ?? '', otp: code });
+      const tokens = await authApi.verifyOtp({ sessionId: sessionId ?? '', otp: code });
       await signIn(tokens.accessToken, tokens.refreshToken);
       // Fetch user profile after sign in
       try {

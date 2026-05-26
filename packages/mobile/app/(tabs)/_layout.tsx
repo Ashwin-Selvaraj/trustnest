@@ -1,12 +1,29 @@
 import * as React from 'react';
-import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Tabs, Redirect } from 'expo-router';
+import { Platform, ActivityIndicator, View } from 'react-native';
+import { useAuth } from '@/store/auth.store';
 
 /**
  * Bottom tab navigator for the authenticated portion of the app.
  * Uses emoji as icons so we don't need to add @expo/vector-icons.
  */
 export default function TabsLayout(): React.ReactElement {
+  const { state } = useAuth();
+
+  // Still restoring tokens from SecureStore — show spinner
+  if (state.isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#2563EB" />
+      </View>
+    );
+  }
+
+  // Not logged in — send to phone login screen
+  if (!state.isAuthenticated) {
+    return <Redirect href="/(auth)/phone" />;
+  }
+
   return (
     <Tabs
       screenOptions={{

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "hardhat compile",
+    "build": "hardhat compile && tsc -p tsconfig.typechain.json",
     "dev": "hardhat compile",
     "typecheck": "tsc --noEmit",
     "lint": "eslint scripts/ test/",
