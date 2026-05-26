@@ -29,6 +29,18 @@ function RootLayoutNav(): React.ReactElement {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen
+          name="(auth)/complete-profile"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="(auth)/kyc"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="(auth)/payment-details"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="agreement/[id]"
           options={{ headerShown: true, title: 'Agreement Details', headerBackTitle: 'Back' }}
         />

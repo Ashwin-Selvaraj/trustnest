@@ -4,6 +4,7 @@ import type {
   SendOtpResponse,
   VerifyOtpRequest,
   AuthTokens,
+  CompleteProfileRequest,
 } from '../types/api';
 
 export const authApi = {
@@ -15,4 +16,7 @@ export const authApi = {
 
   refresh: (refreshToken: string): Promise<AuthTokens> =>
     apiClient.post<AuthTokens>('/auth/refresh', { refreshToken }),
+
+  completeProfile: (data: CompleteProfileRequest): Promise<{ success: boolean }> =>
+    apiClient.post<{ success: boolean }>('/auth/complete-profile', data),
 };

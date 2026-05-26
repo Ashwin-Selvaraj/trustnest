@@ -1,4 +1,4 @@
-import { AgreementStatus, KycStatus, UserRole } from '@trustnest/shared';
+import { AgreementStatus, KycStatus, KycMethod, PaymentDetailsStatus, UserRole } from '@trustnest/shared';
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +20,12 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+export interface CompleteProfileRequest {
+  name: string;
+  role: UserRole;
+  dob: string; // YYYY-MM-DD
+}
+
 // ─── User ────────────────────────────────────────────────────────────────────
 
 export interface UserProfile {
@@ -29,7 +35,14 @@ export interface UserProfile {
   email: string | null;
   role: UserRole;
   kycStatus: KycStatus;
+  kycMethod: KycMethod | null;
+  maskedAadhaar: string | null;
+  maskedPan: string | null;
+  kycRejectionReason: string | null;
+  profileComplete: boolean;
+  paymentDetailsStatus: PaymentDetailsStatus;
   walletAddress: string | null;
+  dob: string | null;
   createdAt: string;
 }
 
@@ -37,6 +50,46 @@ export interface UpdateProfileRequest {
   fullName?: string;
   email?: string;
   role?: UserRole;
+}
+
+// ─── KYC ─────────────────────────────────────────────────────────────────────
+
+export interface KycAadhaarInitRequest {
+  aadhaarNumber: string;
+}
+
+export interface KycAadhaarInitResponse {
+  sessionId: string;
+}
+
+export interface KycAadhaarVerifyRequest {
+  sessionId: string;
+  otp: string;
+}
+
+export interface KycPanRequest {
+  panNumber: string;
+}
+
+export interface KycPanResponse {
+  jobId: string;
+}
+
+// ─── Payment Details ─────────────────────────────────────────────────────────
+
+export interface PaymentDetailsRequest {
+  upiId?: string;
+  bankAccountNumber?: string;
+  bankIfsc?: string;
+}
+
+export interface PaymentDetailsResponse {
+  hasDetails: boolean;
+  upiId: string | null;
+  maskedBankAccount: string | null;
+  bankIfsc: string | null;
+  status: PaymentDetailsStatus;
+  verifiedAt: string | null;
 }
 
 // ─── Reputation ──────────────────────────────────────────────────────────────
@@ -127,4 +180,12 @@ export interface ApiErrorResponse {
   statusCode: number;
   error: string;
   message: string | string[];
+}
+
+export type GateErrorCode = 'KYC_REQUIRED' | 'PAYMENT_DETAILS_REQUIRED' | 'PROFILE_INCOMPLETE';
+
+export interface GateError {
+  code: GateErrorCode;
+  kycStatus?: string;
+  message: string;
 }

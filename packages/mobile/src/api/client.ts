@@ -9,12 +9,14 @@
 export class ApiError extends Error {
   public readonly statusCode: number;
   public readonly serverMessage: string | string[];
+  public readonly code?: string;
 
-  constructor(statusCode: number, message: string | string[]) {
+  constructor(statusCode: number, message: string | string[], code?: string) {
     super(Array.isArray(message) ? message.join('; ') : message);
     this.name = 'ApiError';
     this.statusCode = statusCode;
     this.serverMessage = message;
+    this.code = code;
   }
 }
 
@@ -56,10 +58,15 @@ export class ApiClient {
     }
 
     if (!res.ok) {
-      const err = json as { statusCode?: number; message?: string | string[] } | undefined;
+      const err = json as {
+        statusCode?: number;
+        message?: string | string[];
+        code?: string;
+      } | undefined;
       throw new ApiError(
         err?.statusCode ?? res.status,
         err?.message ?? res.statusText,
+        err?.code,
       );
     }
 

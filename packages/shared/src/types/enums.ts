@@ -1,12 +1,24 @@
 export enum UserRole {
   TENANT = 'TENANT',
   OWNER  = 'OWNER',
+  BOTH   = 'BOTH',
 }
 
 export enum KycStatus {
   PENDING  = 'PENDING',
   VERIFIED = 'VERIFIED',
   REJECTED = 'REJECTED',
+}
+
+export enum KycMethod {
+  AADHAAR = 'AADHAAR',
+  PAN     = 'PAN',
+}
+
+export enum PaymentDetailsStatus {
+  NONE                 = 'NONE',
+  PENDING_VERIFICATION = 'PENDING_VERIFICATION',
+  VERIFIED             = 'VERIFIED',
 }
 
 export enum AgreementStatus {

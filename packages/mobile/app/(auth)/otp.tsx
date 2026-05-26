@@ -41,14 +41,21 @@ export default function OtpScreen(): React.ReactElement {
     try {
       const tokens = await authApi.verifyOtp({ sessionId: sessionId ?? '', otp: code });
       await signIn(tokens.accessToken, tokens.refreshToken);
-      // Fetch user profile after sign in
+
+      // Fetch user profile to decide next screen
       try {
         const user = await usersApi.getMe();
         setUser(user);
+
+        if (!user.profileComplete) {
+          router.replace('/(auth)/complete-profile');
+        } else {
+          router.replace('/(tabs)');
+        }
       } catch {
-        // Non-fatal — user will be fetched on home screen
+        // Non-fatal — fallback to tabs; profile can be completed later
+        router.replace('/(tabs)');
       }
-      router.replace('/(tabs)');
     } catch (err: unknown) {
       setError(err instanceof ApiError ? err.message : 'Invalid OTP. Please try again.');
       setOtp('');

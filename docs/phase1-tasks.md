@@ -177,106 +177,106 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ### A. @trustnest/shared changes
 
-- [ ] Add `BOTH` variant to `UserRole` enum — a user can be both a tenant and an owner (landlord who also rents elsewhere)
-- [ ] Add `KycMethod` enum: `AADHAAR | PAN`
-- [ ] Add `PaymentDetailsStatus` enum: `NONE | PENDING_VERIFICATION | VERIFIED`
+- [x] Add `BOTH` variant to `UserRole` enum — a user can be both a tenant and an owner (landlord who also rents elsewhere)
+- [x] Add `KycMethod` enum: `AADHAAR | PAN`
+- [x] Add `PaymentDetailsStatus` enum: `NONE | PENDING_VERIFICATION | VERIFIED`
 
 ### B. Backend — Data model additions
 
-- [ ] Add fields to `User` entity:
-  - [ ] `name: string` (required; legal name matching KYC document)
-  - [ ] `dob: Date` (date of birth; used for 18+ validation)
-  - [ ] `kycMethod: KycMethod | null`
-  - [ ] `maskedAadhaar: string | null` (last 4 digits only — never store full Aadhaar)
-  - [ ] `maskedPan: string | null` (e.g. `ABCDE1234F` → `ABCDE****F`)
-- [ ] Add `PaymentDetails` entity (separate table, one-to-one with User):
-  - [ ] `upiId: string | null`
-  - [ ] `bankAccountNumber: string | null` (AES-256-GCM encrypted at rest)
-  - [ ] `bankIfsc: string | null`
-  - [ ] `status: PaymentDetailsStatus`
-  - [ ] `verifiedAt: Date | null`
-- [ ] Write TypeORM migration for the above additions
+- [x] Add fields to `User` entity:
+  - [x] `name: string` (required; legal name matching KYC document)
+  - [x] `dob: Date` (date of birth; used for 18+ validation)
+  - [x] `kycMethod: KycMethod | null`
+  - [x] `maskedAadhaar: string | null` (last 4 digits only — never store full Aadhaar)
+  - [x] `maskedPan: string | null` (e.g. `ABCDE1234F` → `ABCDE****F`)
+- [x] Add `PaymentDetails` entity (separate table, one-to-one with User):
+  - [x] `upiId: string | null`
+  - [x] `bankAccountNumber: string | null` (AES-256-GCM encrypted at rest)
+  - [x] `bankIfsc: string | null`
+  - [x] `status: PaymentDetailsStatus`
+  - [x] `verifiedAt: Date | null`
+- [x] Write TypeORM migration for the above additions
 
 ### C. Backend — Auth Module changes
 
-- [ ] Extend `POST /auth/verify-otp` request body to accept `name`, `role` (`TENANT | OWNER | BOTH`), and `dob`
-  - [ ] Validate 18+ server-side (`dob` must be ≥ 18 years before today); return `422` with clear message if underage
-  - [ ] Persist `name`, `role`, `dob` to `User` row on account creation
-  - [ ] Keep `name` / `role` / `dob` optional for existing users upgrading (backward compat) — add `POST /auth/complete-profile` endpoint for users who signed up before this change
-- [ ] `POST /auth/complete-profile` *(new)* — one-time endpoint for users missing name/role/dob; marks profile as complete; JWT guard required
+- [x] Extend `POST /auth/verify-otp` request body to accept `name`, `role` (`TENANT | OWNER | BOTH`), and `dob`
+  - [x] Validate 18+ server-side (`dob` must be ≥ 18 years before today); return `422` with clear message if underage
+  - [x] Persist `name`, `role`, `dob` to `User` row on account creation
+  - [x] Keep `name` / `role` / `dob` optional for existing users upgrading (backward compat) — add `POST /auth/complete-profile` endpoint for users who signed up before this change
+- [x] `POST /auth/complete-profile` *(new)* — one-time endpoint for users missing name/role/dob; marks profile as complete; JWT guard required
 
 ### D. Backend — Users Module changes
 
 > Replace the single `POST /users/me/kyc` (file upload only) with a proper two-path KYC flow.
 
 #### Aadhaar path (preferred — instant, OTP-based)
-- [ ] `POST /users/me/kyc/aadhaar/init` — accepts `aadhaarNumber`; calls UIDAI / DigiLocker API to send OTP to Aadhaar-linked mobile; returns `sessionId`
-- [ ] `POST /users/me/kyc/aadhaar/verify` — accepts `sessionId` + `otp`; on success stores `maskedAadhaar` (last 4 digits), sets `kycMethod = AADHAAR`, advances `kycStatus` to `PENDING` (selfie still required)
-- [ ] Mask Aadhaar before persisting — store only last 4 digits; full number never written to DB
+- [x] `POST /users/me/kyc/aadhaar/init` — accepts `aadhaarNumber`; calls UIDAI / DigiLocker API to send OTP to Aadhaar-linked mobile; returns `sessionId`
+- [x] `POST /users/me/kyc/aadhaar/verify` — accepts `sessionId` + `otp`; on success stores `maskedAadhaar` (last 4 digits), sets `kycMethod = AADHAAR`, advances `kycStatus` to `PENDING` (selfie still required)
+- [x] Mask Aadhaar before persisting — store only last 4 digits; full number never written to DB
 
 #### PAN path (fallback — async, document upload)
-- [ ] `POST /users/me/kyc/pan` — accepts `panNumber` + PAN card image (multipart); uploads image to S3; calls KYC provider API (e.g. Karza / IDfy); returns `jobId`; sets `kycStatus = PENDING`
-- [ ] KYC provider webhook — on callback, store `maskedPan`, set `kycMethod = PAN`; advance to `PENDING_SELFIE` or `VERIFIED` depending on whether selfie is also required by provider
-- [ ] Validate PAN format server-side (`/^[A-Z]{5}[0-9]{4}[A-Z]$/`) before calling provider
+- [x] `POST /users/me/kyc/pan` — accepts `panNumber` + PAN card image (multipart); uploads image to S3; calls KYC provider API (e.g. Karza / IDfy); returns `jobId`; sets `kycStatus = PENDING`
+- [x] KYC provider webhook — on callback, store `maskedPan`, set `kycMethod = PAN`; advance to `PENDING_SELFIE` or `VERIFIED` depending on whether selfie is also required by provider
+- [x] Validate PAN format server-side (`/^[A-Z]{5}[0-9]{4}[A-Z]$/`) before calling provider
 
 #### Selfie / liveness (required for both paths)
-- [ ] `POST /users/me/kyc/selfie` — accepts selfie image (multipart); calls liveness-check API (e.g. Hyperverge / IDfy); on pass sets `kycStatus = VERIFIED`; on fail sets `kycStatus = REJECTED` with rejection reason stored in `kycRejectionReason` column
-- [ ] Add `kycRejectionReason: string | null` column to `User` entity
+- [x] `POST /users/me/kyc/selfie` — accepts selfie image (multipart); calls liveness-check API (e.g. Hyperverge / IDfy); on pass sets `kycStatus = VERIFIED`; on fail sets `kycStatus = REJECTED` with rejection reason stored in `kycRejectionReason` column
+- [x] Add `kycRejectionReason: string | null` column to `User` entity
 
 #### Payment details
-- [ ] `POST /users/me/payment-details` — accepts `upiId` OR `{ bankAccountNumber, bankIfsc }`; for bank accounts, verify via penny-drop (Razorpay / Cashfree); sets `status = VERIFIED`
-- [ ] `GET /users/me/payment-details` — return masked payment details (`upiId` as-is; account number masked to last 4 digits)
-- [ ] `DELETE /users/me/payment-details` — remove and reset status to `NONE`
-- [ ] `GET /users/me` — update response to include `profileComplete: boolean`, `kycStatus`, `kycMethod`, `paymentDetailsStatus`
+- [x] `POST /users/me/payment-details` — accepts `upiId` OR `{ bankAccountNumber, bankIfsc }`; for bank accounts, verify via penny-drop (Razorpay / Cashfree); sets `status = VERIFIED`
+- [x] `GET /users/me/payment-details` — return masked payment details (`upiId` as-is; account number masked to last 4 digits)
+- [x] `DELETE /users/me/payment-details` — remove and reset status to `NONE`
+- [x] `GET /users/me` — update response to include `profileComplete: boolean`, `kycStatus`, `kycMethod`, `paymentDetailsStatus`
 
 ### E. Backend — Progressive Access Gates
 
 > Guards that block downstream actions until the user has completed the required tier.
 
-- [ ] `RequiresProfileComplete` guard — checks `name`, `role`, `dob` are set on `User`; applied to all routes except `/auth/*` and `GET /users/me`; returns `403` with `{ code: 'PROFILE_INCOMPLETE' }` if missing
-- [ ] `RequiresKyc` guard — checks `kycStatus === VERIFIED`; applied to:
+- [x] `RequiresProfileComplete` guard — checks `name`, `role`, `dob` are set on `User`; applied to all routes except `/auth/*` and `GET /users/me`; returns `403` with `{ code: 'PROFILE_INCOMPLETE' }` if missing
+- [x] `RequiresKyc` guard — checks `kycStatus === VERIFIED`; applied to:
   - `POST /agreements`
   - `POST /agreements/:id/confirm`
   - Returns `403` with `{ code: 'KYC_REQUIRED', kycStatus: '...' }`
-- [ ] `RequiresPaymentDetails` guard — checks `PaymentDetails.status === VERIFIED`; applied to:
+- [x] `RequiresPaymentDetails` guard — checks `PaymentDetails.status === VERIFIED`; applied to:
   - `POST /payments/initiate`
   - Returns `403` with `{ code: 'PAYMENT_DETAILS_REQUIRED' }`
-- [ ] All three guards return a machine-readable `code` field so the mobile app can navigate the user to the right screen without string-matching error messages
+- [x] All three guards return a machine-readable `code` field so the mobile app can navigate the user to the right screen without string-matching error messages
 
 ### F. Mobile — Auth flow changes
 
 > The existing phone → OTP → home flow becomes phone → OTP → profile completion → home.
 
-- [ ] **Profile completion screen** *(new, shown once after first OTP verify)*
+- [x] **Profile completion screen** *(new, shown once after first OTP verify)*
   - Full legal name text input
   - Role picker: Tenant / Owner / Both (segmented control or radio)
   - Date of birth picker (date wheel; blocks if under 18 with inline error)
   - CTA: "Continue" → calls extended `POST /auth/verify-otp` or `POST /auth/complete-profile`
-- [ ] Skip profile completion screen if `name` + `role` + `dob` already set (returning user)
+- [x] Skip profile completion screen if `name` + `role` + `dob` already set (returning user)
 
 ### G. Mobile — KYC screens *(new)*
 
-- [ ] **KYC entry screen** — shown when `RequiresKyc` gate returns `403`
+- [x] **KYC entry screen** — shown when `RequiresKyc` gate returns `403`
   - Explains why verification is needed ("Required to create a rental agreement")
   - Two CTAs: "Verify with Aadhaar" / "Verify with PAN card"
-- [ ] **Aadhaar verification screen**
+- [x] **Aadhaar verification screen**
   - Step 1: Aadhaar number input (12-digit, masked after entry) → "Send OTP" → calls `POST /users/me/kyc/aadhaar/init`
   - Step 2: 6-digit OTP input (reuses `OtpInput` from ui-kit) → calls `POST /users/me/kyc/aadhaar/verify`
   - Success → advance to selfie screen
-- [ ] **PAN verification screen**
+- [x] **PAN verification screen**
   - PAN number text input with format validation
   - PAN card image upload (camera or gallery)
   - Calls `POST /users/me/kyc/pan`; shows "Under review" pending state
-- [ ] **Selfie / liveness screen** *(required after both paths)*
+- [x] **Selfie / liveness screen** *(required after both paths)*
   - Camera preview with oval face guide
   - Liveness instructions ("blink", "turn left" etc. — driven by provider SDK)
   - Calls `POST /users/me/kyc/selfie`
   - Shows success ✅ or failure with reason + "Try again" CTA
-- [ ] **KYC rejected screen** — shown when `kycStatus === REJECTED`; shows `kycRejectionReason`; CTAs to retry selfie or switch KYC method
+- [x] **KYC rejected screen** — shown when `kycStatus === REJECTED`; shows `kycRejectionReason`; CTAs to retry selfie or switch KYC method
 
 ### H. Mobile — Payment details screen *(new)*
 
-- [ ] **Payment details screen** — shown contextually when `RequiresPaymentDetails` gate returns `403`
+- [x] **Payment details screen** — shown contextually when `RequiresPaymentDetails` gate returns `403`
   - Tab picker: "UPI ID" / "Bank Account"
   - UPI tab: text input for UPI ID (e.g. `ashwin@upi`); calls `POST /users/me/payment-details`
   - Bank tab: account number + IFSC inputs; penny-drop verification shown as "Verifying…" spinner
@@ -286,20 +286,20 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 > Contextual prompts that appear inline when a gate blocks an action — no redirect, just a bottom sheet with a CTA.
 
-- [ ] `KycRequiredSheet` — shown on "Create Agreement" / "Confirm Agreement" CTA when `kycStatus !== VERIFIED`
+- [x] `KycRequiredSheet` — shown on "Create Agreement" / "Confirm Agreement" CTA when `kycStatus !== VERIFIED`
   - Body: "Verify your identity to continue. Takes 2 minutes."
   - CTA: "Verify now" → navigates to KYC entry screen
-- [ ] `PaymentDetailsRequiredSheet` — shown on "Pay Deposit" CTA when payment details missing
+- [x] `PaymentDetailsRequiredSheet` — shown on "Pay Deposit" CTA when payment details missing
   - Body: "Add a UPI ID or bank account to pay."
   - CTA: "Add payment details" → navigates to payment details screen
-- [ ] `ProfileIncompleteSheet` — shown on any gated action when profile is incomplete
+- [x] `ProfileIncompleteSheet` — shown on any gated action when profile is incomplete
   - CTA: "Complete your profile" → navigates to profile completion screen
 
 ### J. Mobile — Profile screen updates
 
-- [ ] Add "Verification" section: shows Aadhaar ✅ / PAN ✅ / Selfie ✅ with masked identifiers
-- [ ] Add "Payment Details" section: shows masked UPI ID or bank account + "Edit" CTA
-- [ ] Show inline "Action required" banners for incomplete tiers (e.g. "Add a UPI ID to enable payments")
+- [x] Add "Verification" section: shows Aadhaar ✅ / PAN ✅ / Selfie ✅ with masked identifiers
+- [x] Add "Payment Details" section: shows masked UPI ID or bank account + "Edit" CTA
+- [x] Show inline "Action required" banners for incomplete tiers (e.g. "Add a UPI ID to enable payments")
 
 ---
 

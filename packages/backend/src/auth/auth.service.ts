@@ -1,6 +1,7 @@
 import {
   Injectable,
   UnauthorizedException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -10,7 +11,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { User } from '../users/user.entity';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { OtpStore } from './otp.store';
-import { JobType } from '@trustnest/shared';
+import { JobType, UserRole } from '@trustnest/shared';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { CompleteProfileDto } from './dto/complete-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,20 +36,25 @@ export class AuthService {
   }
 
   async verifyOtp(
-    sessionId: string,
-    otp: string,
+    dto: VerifyOtpDto,
   ): Promise<{ accessToken: string; refreshToken: string; user: Partial<User> }> {
-    const stored = await this.otpStore.getOtp(sessionId);
-    if (!stored || stored.otp !== otp) {
+    const stored = await this.otpStore.getOtp(dto.sessionId);
+    if (!stored || stored.otp !== dto.otp) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
 
-    await this.otpStore.deleteOtp(sessionId);
+    await this.otpStore.deleteOtp(dto.sessionId);
 
     // Upsert user
     let user = await this.userRepo.findOne({ where: { phone: stored.phone } });
     if (!user) {
       user = this.userRepo.create({ phone: stored.phone });
+
+      // Persist optional profile fields if provided at registration time
+      if (dto.name) user.name = dto.name;
+      if (dto.role) user.role = dto.role;
+      if (dto.dob) user.dob = new Date(dto.dob);
+
       user = await this.userRepo.save(user);
 
       // Create custodial wallet
@@ -57,6 +65,16 @@ export class AuthService {
         userId: user.id,
         walletAddress: wallet.address,
       });
+    } else {
+      // Update missing fields on existing user if provided
+      const updates: { name?: string; role?: UserRole; dob?: Date } = {};
+      if (dto.name && !user.name) updates.name = dto.name;
+      if (dto.role && !user.role) updates.role = dto.role as UserRole;
+      if (dto.dob && !user.dob) updates.dob = new Date(dto.dob);
+      if (Object.keys(updates).length > 0) {
+        await this.userRepo.update(user.id, updates);
+        user = { ...user, ...updates } as User;
+      }
     }
 
     const tokens = await this.issueTokens(user);
@@ -64,6 +82,31 @@ export class AuthService {
       ...tokens,
       user: { id: user.id, phone: user.phone, role: user.role },
     };
+  }
+
+  async completeProfile(
+    userId: string,
+    dto: CompleteProfileDto,
+  ): Promise<{ success: boolean }> {
+    // Validate 18+ age requirement
+    const dob = new Date(dto.dob);
+    const today = new Date();
+    const age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    const isUnder18 =
+      age < 18 || (age === 18 && (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())));
+
+    if (isUnder18) {
+      throw new BadRequestException('You must be at least 18 years old to use TrustNest');
+    }
+
+    await this.userRepo.update(userId, {
+      name: dto.name,
+      role: dto.role,
+      dob,
+    });
+
+    return { success: true };
   }
 
   async refresh(token: string): Promise<{ accessToken: string }> {
