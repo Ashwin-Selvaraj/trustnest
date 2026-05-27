@@ -1,7 +1,10 @@
 import {
   Controller, Get, Patch, Post, Delete, Body, Param, Req,
-  HttpCode, HttpStatus,
+  HttpCode, HttpStatus, UseInterceptors, UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Request } from 'express';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -66,9 +69,24 @@ export class UsersController {
 
   @Post('me/kyc/selfie')
   @HttpCode(HttpStatus.OK)
-  verifySelfie(@Req() req: Request) {
+  @UseInterceptors(
+    FileInterceptor('selfie', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB cap
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new BadRequestException('Only image files are accepted'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  verifySelfie(
+    @Req() req: Request,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
     const user = req.user as JwtPayload;
-    return this.usersService.verifySelfie(user.sub);
+    return this.usersService.verifySelfie(user.sub, file);
   }
 
   // ─── Payment Details ───────────────────────────────────────────────────────

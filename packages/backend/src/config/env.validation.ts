@@ -23,4 +23,10 @@ export const envValidationSchema = Joi.object({
   PENNY_DROP_PROVIDER: Joi.string().valid('stub', 'razorpay', 'cashfree').default('stub'),
   ADMIN_ALLOWED_IPS: Joi.string().default('127.0.0.1,::1,::ffff:127.0.0.1'),
   MASTER_ENCRYPTION_KEY: Joi.string().min(64).required(),
+  // Cloudflare R2
+  R2_ACCOUNT_ID:      Joi.string().allow('').optional(),
+  R2_ACCESS_KEY_ID:   Joi.string().allow('').optional(),
+  R2_SECRET_ACCESS_KEY: Joi.string().allow('').optional(),
+  R2_BUCKET_NAME:     Joi.string().allow('').optional(),
+  R2_PUBLIC_URL:      Joi.string().allow('').optional(),
 });

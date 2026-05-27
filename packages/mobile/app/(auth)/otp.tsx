@@ -15,11 +15,13 @@ import {
 import { authApi } from '@/api/auth';
 import { usersApi } from '@/api/users';
 import { useAuth } from '@/store/auth.store';
+import { useUserContext } from '@/store/user-context';
 import { ApiError } from '@/api/client';
 
 export default function OtpScreen(): React.ReactElement {
   const { phone, sessionId } = useLocalSearchParams<{ phone: string; sessionId: string }>();
   const { signIn, setUser } = useAuth();
+  const { setPhone } = useUserContext();
 
   const [otp, setOtp] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
@@ -39,16 +41,17 @@ export default function OtpScreen(): React.ReactElement {
     try {
       const tokens = await authApi.verifyOtp({ sessionId: sessionId ?? '', otp: code });
       await signIn(tokens.accessToken, tokens.refreshToken);
+      if (phone) setPhone(phone);
       try {
         const user = await usersApi.getMe();
         setUser(user);
         if (!user.profileComplete) {
-          router.replace('/(auth)/complete-profile');
+          router.replace('/(auth)/profile-setup');
         } else {
           router.replace('/(tabs)');
         }
       } catch {
-        router.replace('/(tabs)');
+        router.replace('/(auth)/profile-setup');
       }
     } catch (err: unknown) {
       setError(err instanceof ApiError ? err.message : 'Invalid OTP. Please try again.');
@@ -72,14 +75,16 @@ export default function OtpScreen(): React.ReactElement {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <NavHeader title="Verify OTP" onBack={() => router.back()} />
 
       <View style={styles.container}>
         <Banner variant="info">
-          Enter the 6-digit code sent to{' '}
-          <Text style={styles.phoneBold}>{phone}</Text>
+          <Text style={styles.bannerText}>
+            Enter the 6-digit code sent to{' '}
+            <Text style={styles.phoneBold}>{phone}</Text>
+          </Text>
         </Banner>
 
         <OtpInput
@@ -126,6 +131,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     gap: spacing.md,
   },
+  bannerText:  { fontSize: fontSize.sm, lineHeight: 20, color: colors.text },
   phoneBold:   { fontWeight: fontWeight.semibold, color: colors.text },
   otpInput:    { marginVertical: spacing.sm },
   errorText: {

@@ -10,6 +10,7 @@ import { PropertyInterest } from '../interests/property-interest.entity';
 import { Property } from '../properties/property.entity';
 import { PropertyImage } from '../properties/property-image.entity';
 import { KycModule } from '../kyc/kyc.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { KycModule } from '../kyc/kyc.module';
       PropertyInterest, Property, PropertyImage,
     ]),
     KycModule,
+    StorageModule,
   ],
   controllers: [UsersController],
   providers: [UsersService],

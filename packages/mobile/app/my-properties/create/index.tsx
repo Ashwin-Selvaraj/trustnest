@@ -455,7 +455,7 @@ export default function CreatePropertyScreen(): React.ReactElement {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       {/* Progress bar */}
       <View style={styles.progressContainer}>

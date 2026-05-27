@@ -1,9 +1,10 @@
 import * as React from 'react';
 import {
   View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Svg, { Path, Circle } from 'react-native-svg';
 import { useAuth } from '@/store/auth.store';
 import {
   PropertyCard, FilterBar, Banner, FAB,
@@ -13,6 +14,26 @@ import {
 import { UserRole } from '@trustnest/shared';
 import { propertiesApi } from '@/api/properties';
 import type { Property } from '@/types/api';
+
+// ─── Inline SVG icons for search bar ─────────────────────────────────────────
+
+function SearchIcon(): React.ReactElement {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Circle cx={11} cy={11} r={8} stroke={colors.textSec} strokeWidth={2} />
+      <Path d="M21 21l-4.35-4.35" stroke={colors.textSec} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function FilterIcon({ active }: { active: boolean }): React.ReactElement {
+  const c = active ? colors.primary : colors.textSec;
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 6h16M7 12h10M10 18h4" stroke={c} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
 
 // ─── Filter definitions ───────────────────────────────────────────────────────
 
@@ -113,54 +134,117 @@ function BrowseView(): React.ReactElement {
     }
   }, [endReached, loading, page, loadProperties]);
 
+  const hasFilters = selectedBhk.length > 0 || selectedRent.length > 0 || selectedFurn.length > 0;
+  const hasResults = properties.length > 0;
+  const isFiltered = hasFilters || searchText.trim().length > 0;
+
   return (
     <View style={styles.flex}>
-      {/* Search bar */}
+      {/* Premium search bar */}
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search city or locality…"
-          placeholderTextColor={colors.textSec}
-          value={searchText}
-          onChangeText={setSearchText}
-        />
+        <View style={styles.searchBar}>
+          <View style={styles.searchIconWrap}><SearchIcon /></View>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search city or locality…"
+            placeholderTextColor={colors.textSec}
+            value={searchText}
+            onChangeText={setSearchText}
+            returnKeyType="search"
+          />
+          {searchText.length > 0 && (
+            <Pressable style={styles.clearBtn} onPress={() => setSearchText('')} hitSlop={8}>
+              <Text style={styles.clearText}>✕</Text>
+            </Pressable>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.filterIconBtn, hasFilters && styles.filterIconBtnActive]}
+          onPress={() => {
+            // Toggle all filters off when active, otherwise show BHK filter
+            if (hasFilters) {
+              setSelectedBhk([]);
+              setSelectedRent([]);
+              setSelectedFurn([]);
+            }
+          }}
+          activeOpacity={0.75}
+        >
+          <FilterIcon active={hasFilters} />
+        </TouchableOpacity>
       </View>
 
-      {/* Filters */}
-      <FilterBar
-        filters={BHK_FILTERS}
-        selected={selectedBhk}
-        onFilterChange={setSelectedBhk}
-        style={styles.filterBarPad}
-      />
-      <FilterBar
-        filters={RENT_FILTERS}
-        selected={selectedRent}
-        onFilterChange={setSelectedRent}
-        style={styles.filterBarPad}
-      />
-      <FilterBar
-        filters={FURNISHING_FILTERS}
-        selected={selectedFurn}
-        onFilterChange={setSelectedFurn}
-        style={styles.filterBarPad}
-      />
+      {/* Filters — only shown when there are results or active filters */}
+      {(hasResults || hasFilters) && (
+        <>
+          <FilterBar
+            filters={BHK_FILTERS}
+            selected={selectedBhk}
+            onFilterChange={setSelectedBhk}
+            style={styles.filterBarPad}
+          />
+          <FilterBar
+            filters={RENT_FILTERS}
+            selected={selectedRent}
+            onFilterChange={setSelectedRent}
+            style={styles.filterBarPad}
+          />
+          <FilterBar
+            filters={FURNISHING_FILTERS}
+            selected={selectedFurn}
+            onFilterChange={setSelectedFurn}
+            style={styles.filterBarPad}
+          />
+        </>
+      )}
 
       {/* Results */}
       <FlatList
         data={properties}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          !hasResults && styles.listContentEmpty,
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.3}
         ListEmptyComponent={
-          loading ? null : (
-            <Banner variant="info">No properties found. Try different filters.</Banner>
+          loading ? (
+            <ActivityIndicator style={styles.loader} color={colors.primary} />
+          ) : isFiltered ? (
+            /* Empty state — no results from filters */
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🔍</Text>
+              <Text style={styles.emptyTitle}>No properties found</Text>
+              <Text style={styles.emptySubtitle}>
+                Try different filters or search in a nearby city.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyAction}
+                onPress={() => {
+                  setSearchText('');
+                  setSelectedBhk([]);
+                  setSelectedRent([]);
+                  setSelectedFurn([]);
+                }}
+              >
+                <Text style={styles.emptyActionText}>Clear filters</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* Empty state — no data at all */
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🏠</Text>
+              <Text style={styles.emptyTitle}>No listings yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Properties listed on TrustNest will appear here.{'\n'}Check back soon!
+              </Text>
+            </View>
           )
         }
         ListFooterComponent={
-          loading && !refreshing ? (
+          loading && !refreshing && hasResults ? (
             <ActivityIndicator style={styles.loader} color={colors.primary} />
           ) : null
         }
@@ -317,19 +401,55 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   searchContainer: {
+    flexDirection:     'row',
+    alignItems:        'center',
     paddingHorizontal: spacing.base,
     paddingVertical:   spacing.sm,
-    backgroundColor:  '#FFFFFF',
+    backgroundColor:   '#FFFFFF',
+    gap:               spacing.sm,
   },
-  searchInput: {
+  searchBar: {
+    flex:              1,
+    height:            44,
+    flexDirection:     'row',
+    alignItems:        'center',
     backgroundColor:   colors.surface,
-    borderRadius:      borderRadius.md,
+    borderRadius:      12,
     borderWidth:       1,
     borderColor:       colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical:   spacing.sm,
-    fontSize:          fontSize.base,
-    color:             colors.text,
+    paddingHorizontal: spacing.sm,
+    gap:               spacing.xs,
+  },
+  searchIconWrap: { paddingHorizontal: 2 },
+  searchInput: {
+    flex:     1,
+    height:   44,
+    fontSize: fontSize.base,
+    color:    colors.text,
+    padding:  0,
+  },
+  clearBtn: {
+    padding: 4,
+  },
+  clearText: {
+    fontSize:   fontSize.sm,
+    color:      colors.textSec,
+    fontWeight: fontWeight.medium,
+  },
+  filterIconBtn: {
+    width:           44,
+    height:          44,
+    borderRadius:    12,
+    borderWidth:     1,
+    borderColor:     colors.border,
+    backgroundColor: colors.surface,
+    alignItems:      'center',
+    justifyContent:  'center',
+    flexShrink:      0,
+  },
+  filterIconBtnActive: {
+    borderColor:     colors.primary,
+    backgroundColor: colors.primaryLight,
   },
   filterBarPad: {
     paddingVertical: spacing.xs,
@@ -339,11 +459,46 @@ const styles = StyleSheet.create({
     gap:        spacing.md,
     paddingBottom: 100,
   },
+  listContentEmpty: {
+    flexGrow: 1,
+  },
   card: {
     marginBottom: spacing.sm,
   },
   loader: {
     marginVertical: spacing.base,
+  },
+  emptyState: {
+    flex:          1,
+    alignItems:    'center',
+    justifyContent: 'center',
+    paddingVertical: spacing['2xl'],
+    gap:           spacing.sm,
+  },
+  emptyEmoji: { fontSize: 52, marginBottom: spacing.xs },
+  emptyTitle: {
+    fontSize:   fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color:      colors.text,
+    textAlign:  'center',
+  },
+  emptySubtitle: {
+    fontSize:   fontSize.base,
+    color:      colors.textSec,
+    textAlign:  'center',
+    lineHeight: 22,
+  },
+  emptyAction: {
+    marginTop:       spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius:    borderRadius.md,
+    backgroundColor: colors.primaryLight,
+  },
+  emptyActionText: {
+    fontSize:   fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color:      colors.primary,
   },
   segmentRow: {
     flexDirection:     'row',
