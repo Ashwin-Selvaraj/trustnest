@@ -12,6 +12,7 @@ import {
   NavHeader, SectionHeader, Button, TextInput, formatINR, parseINR,
   colors, spacing,
 } from '@trustnest/ui-kit';
+import { DatePickerInput } from '@/components/DatePickerInput';
 import { agreementsApi } from '@/api/agreements';
 import { ApiError } from '@/api/client';
 
@@ -42,6 +43,9 @@ export default function CreateAgreementScreen(): React.ReactElement {
     endDate:           '',
     counterpartyPhone: '',
   });
+  // Date objects that drive the DatePickerInput (mirrors form.startDate/endDate)
+  const [startDateObj, setStartDateObj] = React.useState<Date | null>(null);
+  const [endDateObj,   setEndDateObj]   = React.useState<Date | null>(null);
   const [errors, setErrors] = React.useState<FormErrors>({});
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -91,7 +95,7 @@ export default function CreateAgreementScreen(): React.ReactElement {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <NavHeader title="New Agreement" onBack={() => router.back()} />
 
@@ -129,23 +133,27 @@ export default function CreateAgreementScreen(): React.ReactElement {
         />
 
         <SectionHeader style={styles.sectionGap}>Lease Period</SectionHeader>
-        <TextInput
+        <DatePickerInput
           label="Start Date"
-          placeholder="2025-01-01"
-          value={form.startDate}
-          onChangeText={(t) => setField('startDate', t)}
+          value={startDateObj}
+          onChange={(date, iso) => {
+            setStartDateObj(date);
+            setField('startDate', iso);
+          }}
           error={errors.startDate}
-          hint="Format: YYYY-MM-DD"
-          keyboardType="numbers-and-punctuation"
+          hint="Lease start date"
+          maximumDate={endDateObj ?? undefined}
         />
-        <TextInput
+        <DatePickerInput
           label="End Date"
-          placeholder="2025-12-31"
-          value={form.endDate}
-          onChangeText={(t) => setField('endDate', t)}
+          value={endDateObj}
+          onChange={(date, iso) => {
+            setEndDateObj(date);
+            setField('endDate', iso);
+          }}
           error={errors.endDate}
-          hint="Format: YYYY-MM-DD"
-          keyboardType="numbers-and-punctuation"
+          hint="Lease end date"
+          minimumDate={startDateObj ?? undefined}
         />
 
         <SectionHeader style={styles.sectionGap}>Counterparty</SectionHeader>

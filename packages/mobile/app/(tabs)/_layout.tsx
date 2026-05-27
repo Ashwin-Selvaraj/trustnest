@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { Tabs, Redirect } from 'expo-router';
-import { Platform, ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/store/auth.store';
+import { TrustNestHeader } from '@/components/TrustNestHeader';
 
 /**
  * Bottom tab navigator for the authenticated portion of the app.
@@ -9,6 +11,7 @@ import { useAuth } from '@/store/auth.store';
  */
 export default function TabsLayout(): React.ReactElement {
   const { state } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Still restoring tokens from SecureStore — show spinner
   if (state.isLoading) {
@@ -32,43 +35,35 @@ export default function TabsLayout(): React.ReactElement {
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E5E7EB',
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: insets.bottom,
+          height: 60 + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '500',
         },
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-        },
-        headerTitleStyle: {
-          fontWeight: '700',
-          color: '#111827',
-        },
-        headerShadowVisible: false,
+        // Use TrustNestHeader on all tab screens
+        header: () => <TrustNestHeader />,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Agreements',
-          tabBarLabel: 'Agreements',
+          title: 'Home',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
-            <TabIcon emoji="📋" color={String(color)} />
+            <TabIcon emoji="🏠" color={String(color)} />
           ),
-          headerTitle: 'My Agreements',
         }}
       />
       <Tabs.Screen
         name="browse"
         options={{
-          title: 'Discover',
-          tabBarLabel: 'Discover',
+          title: 'Browse',
+          tabBarLabel: 'Browse',
           tabBarIcon: ({ color }) => (
             <TabIcon emoji="🔍" color={String(color)} />
           ),
-          headerTitle: 'Discover',
         }}
       />
       <Tabs.Screen
@@ -79,7 +74,6 @@ export default function TabsLayout(): React.ReactElement {
           tabBarIcon: ({ color }) => (
             <TabIcon emoji="🔔" color={String(color)} />
           ),
-          headerTitle: 'Notifications',
         }}
       />
       <Tabs.Screen

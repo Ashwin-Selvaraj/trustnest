@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import { AuthProvider } from '@/store/auth.store';
+import { UserContextProvider } from '@/store/user-context';
 
 /**
  * Root layout — declares all screens unconditionally.
@@ -88,7 +89,9 @@ function RootLayoutNav(): React.ReactElement {
 export default function RootLayout(): React.ReactElement {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <UserContextProvider>
+        <RootLayoutNav />
+      </UserContextProvider>
     </AuthProvider>
   );
 }

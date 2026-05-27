@@ -20,6 +20,7 @@ import { KycPanDto } from './dto/kyc-pan.dto';
 import { PaymentDetailsDto } from './dto/payment-details.dto';
 import { KycStatus, KycMethod, PaymentDetailsStatus } from '@trustnest/shared';
 import { KycProviderFactory } from '../kyc/kyc-provider.factory';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class UsersService {
@@ -34,6 +35,7 @@ export class UsersService {
     @InjectRepository(Property)          private readonly propertyRepo: Repository<Property>,
     @InjectRepository(PropertyImage)     private readonly propertyImageRepo: Repository<PropertyImage>,
     private readonly kycFactory: KycProviderFactory,
+    private readonly storage: StorageService,
   ) {}
 
   async findById(id: string): Promise<User> {
@@ -150,23 +152,37 @@ export class UsersService {
 
   // ─── KYC: Selfie / Liveness ───────────────────────────────────────────────
 
-  async verifySelfie(userId: string): Promise<{ success: boolean; kycStatus: KycStatus }> {
-    // Provider performs liveness check (Stub = auto-pass; Sandbox/Digio = real check)
-    // imageBase64 is empty string for now — TODO: accept multipart upload in controller
-    const { passed, reason } = await this.kycFactory.getProvider().verifyLiveness('');
+  async verifySelfie(
+    userId: string,
+    file: Express.Multer.File | undefined,
+  ): Promise<{ success: boolean; kycStatus: KycStatus; selfieUrl: string | null }> {
+    // 1. Upload the selfie to R2 (if provided) and get back a public URL.
+    let selfieUrl: string | null = null;
+    if (file) {
+      const ext = file.mimetype === 'image/png' ? 'png' : 'jpg';
+      const key = `kyc/selfies/${userId}/${Date.now()}.${ext}`;
+      selfieUrl = await this.storage.upload(key, file.buffer, file.mimetype);
+    }
+
+    // 2. Run liveness check via the active KYC provider.
+    //    Pass the base64-encoded image when available; stub provider ignores it.
+    const imageBase64 = file ? file.buffer.toString('base64') : '';
+    const { passed, reason } = await this.kycFactory.getProvider().verifyLiveness(imageBase64);
 
     if (passed) {
       await this.userRepo.update(userId, {
         kycStatus: KycStatus.VERIFIED,
         kycRejectionReason: null,
+        ...(selfieUrl ? { kycSelfieUrl: selfieUrl } : {}),
       });
-      return { success: true, kycStatus: KycStatus.VERIFIED };
+      return { success: true, kycStatus: KycStatus.VERIFIED, selfieUrl };
     } else {
       await this.userRepo.update(userId, {
         kycStatus: KycStatus.REJECTED,
         kycRejectionReason: reason ?? 'Liveness check failed',
+        ...(selfieUrl ? { kycSelfieUrl: selfieUrl } : {}),
       });
-      return { success: false, kycStatus: KycStatus.REJECTED };
+      return { success: false, kycStatus: KycStatus.REJECTED, selfieUrl };
     }
   }
 

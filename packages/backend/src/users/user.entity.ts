@@ -39,6 +39,9 @@ export class User {
   @Column({ nullable: true, type: 'text' })
   kycRejectionReason!: string | null;
 
+  @Column({ nullable: true, type: 'text' })
+  kycSelfieUrl!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

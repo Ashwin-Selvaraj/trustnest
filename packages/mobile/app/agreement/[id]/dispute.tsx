@@ -47,7 +47,7 @@ export default function DisputeScreen(): React.ReactElement {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <NavHeader title="Raise Dispute" onBack={() => router.back()} />
 

@@ -35,8 +35,13 @@ export class ApiClient {
     body?: unknown,
     extraHeaders?: Record<string, string>,
   ): Promise<T> {
+    const hasBody = body !== undefined;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      // Only set Content-Type when we're actually sending a body.
+      // Sending Content-Type: application/json with no body causes React
+      // Native's native HTTP layer to forward an empty payload, which
+      // express's body-parser tries to parse and throws a JSON syntax error.
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...extraHeaders,
     };
     if (this.accessToken) {
@@ -46,7 +51,7 @@ export class ApiClient {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: hasBody ? JSON.stringify(body) : undefined,
     });
 
     let json: unknown;
@@ -87,6 +92,46 @@ export class ApiClient {
 
   delete<T>(path: string): Promise<T> {
     return this.request<T>('DELETE', path);
+  }
+
+  /**
+   * POST a FormData payload (for file uploads). Does NOT set Content-Type —
+   * the browser/RN fetch runtime sets it automatically with the correct boundary.
+   */
+  async postFormData<T>(path: string, formData: FormData): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    let json: unknown;
+    const text = await res.text();
+    try {
+      json = text ? (JSON.parse(text) as unknown) : undefined;
+    } catch {
+      json = undefined;
+    }
+
+    if (!res.ok) {
+      const err = json as {
+        statusCode?: number;
+        message?: string | string[];
+        code?: string;
+      } | undefined;
+      throw new ApiError(
+        err?.statusCode ?? res.status,
+        err?.message ?? res.statusText,
+        err?.code,
+      );
+    }
+
+    return json as T;
   }
 }
 
