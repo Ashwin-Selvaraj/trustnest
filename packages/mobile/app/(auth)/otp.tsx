@@ -35,7 +35,7 @@ export default function OtpScreen(): React.ReactElement {
   }, [resendCountdown]);
 
   const handleVerify = async (code: string): Promise<void> => {
-    if (code.length < 6) return;
+    if (code.length < 6 || isLoading) return;
     setIsLoading(true);
     setError(null);
     try {

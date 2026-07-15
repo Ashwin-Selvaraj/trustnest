@@ -14,6 +14,7 @@ export {
   PropertyStatus,
   InterestStatus,
   TenantPreference,
+  NotificationType,
 } from './types/enums';
 
 export type { ContractAddresses } from './constants/contracts';

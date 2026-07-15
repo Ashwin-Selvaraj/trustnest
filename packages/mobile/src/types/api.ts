@@ -192,7 +192,7 @@ export interface GateError {
 
 // ─── Properties ───────────────────────────────────────────────────────────────
 
-import { BhkType, FurnishingStatus, PropertyStatus, InterestStatus, TenantPreference } from '@trustnest/shared';
+import { BhkType, FurnishingStatus, PropertyStatus, InterestStatus, TenantPreference, NotificationType } from '@trustnest/shared';
 
 export interface PropertyImage {
   id: string;
@@ -205,8 +205,11 @@ export interface PropertyImage {
 export interface Property {
   id: string;
   ownerId: string;
-  ownerName: string;
-  ownerScore: number | null;
+  /** Nested owner public profile as returned by the API */
+  owner?: { id: string; name: string | null } | null;
+  /** Flat fields kept for older call sites; prefer owner?.name */
+  ownerName?: string | null;
+  ownerScore?: number | null;
   title: string;
   address: string;
   city: string;
@@ -291,4 +294,23 @@ export interface PropertySearchParams {
   furnishingStatus?: FurnishingStatus;
   page?: number;
   limit?: number;
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+
+export interface AppNotification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationListResponse {
+  data: AppNotification[];
+  total: number;
+  unreadCount: number;
 }

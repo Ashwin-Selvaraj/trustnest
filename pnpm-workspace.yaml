@@ -1,2 +1,7 @@
 packages:
   - "packages/*"
+allowBuilds:
+  '@nestjs/core': true
+  keccak: true
+  msgpackr-extract: true
+  secp256k1: true

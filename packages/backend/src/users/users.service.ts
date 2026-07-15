@@ -57,7 +57,9 @@ export class UsersService {
       phone: user.phone,
       name: user.name,
       role: user.role,
-      dob: user.dob ? user.dob.toISOString().split('T')[0] : null,
+      // TypeORM returns `date`-typed columns as plain 'YYYY-MM-DD' strings at
+      // runtime (not Date instances, despite the entity's `Date | null` type).
+      dob: user.dob ? String(user.dob).split('T')[0] : null,
       kycStatus: user.kycStatus,
       kycMethod: user.kycMethod,
       maskedAadhaar: user.maskedAadhaar,

@@ -76,13 +76,13 @@ export function DatePickerInput({
   }, [value]);
 
   const handleChangeText = (raw: string): void => {
-    // Auto-insert slashes as user types: 01 → 01/ → 01/03 → 01/03/
-    let v = raw.replace(/[^\d/]/g, '');
-    if (raw.length > text.length) {
-      // Typing forward — auto-add slashes
-      if (v.length === 2 && !v.includes('/'))  v = v + '/';
-      if (v.length === 5 && v.split('/').length === 2) v = v + '/';
-    }
+    // Re-derive the formatted value from the digits alone so slashes appear
+    // no matter how the input arrives (fast typing, paste, autofill) and
+    // disappear naturally on deletion: 2408 → 24/08, 24082026 → 24/08/2026.
+    const digits = raw.replace(/\D/g, '').slice(0, 8);
+    let v = digits;
+    if (digits.length > 4)      v = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    else if (digits.length > 2) v = `${digits.slice(0, 2)}/${digits.slice(2)}`;
     setText(v);
     setLocalError(null);
   };

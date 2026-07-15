@@ -31,6 +31,7 @@ import { useAuth } from '@/store/auth.store';
 import { useUserContext } from '@/store/user-context';
 import { usersApi } from '@/api/users';
 import { agreementsApi } from '@/api/agreements';
+import { SignInPrompt } from '../../components/SignInPrompt';
 import type { ReputationScore } from '@/types/api';
 
 // ─── Chevron icon ─────────────────────────────────────────────────────────────
@@ -284,6 +285,16 @@ export default function ProfileScreen(): React.ReactElement {
       { text: 'Sign Out', style: 'destructive', onPress: () => void signOut() },
     ]);
   };
+
+  if (!state.isAuthenticated) {
+    return (
+      <SignInPrompt
+        emoji="👤"
+        title="Create your TrustNest profile"
+        message="Sign in to verify your identity, build your reputation score, and manage your rentals."
+      />
+    );
+  }
 
   const kycStatus      = user?.kycStatus ?? KycStatus.PENDING;
   const kycMethod      = user?.kycMethod ?? null;

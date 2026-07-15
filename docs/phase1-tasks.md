@@ -988,6 +988,120 @@ Out of scope: Kleros (Phase 2), Aave yield (Phase 3), MPC wallets (Phase 3), Cha
 
 ---
 
+## 12e. Mobile UX Polish & Role-Based Flow Gating
+
+> **Context:** first round of manual QA surfaced UX gaps: date fields accepted raw text without
+> auto-formatting, the "Any" tenant-preference chip could be combined with specific preferences
+> (contradictory), and role separation between tenant and owner flows was incomplete.
+>
+> **Role model (product decision):**
+> - `TENANT` — can browse listings and express interest. CANNOT list properties or see My Properties.
+> - `OWNER` — can list/manage properties AND browse the market (market-rate research), but CANNOT
+>   express interest — the detail screen shows an info banner pointing them to switch role to `BOTH`.
+> - `BOTH` — full access to both flows.
+> - Client-side gates are UX only; backend guards (`RequiresOwnerRole` / `RequiresTenantRole`)
+>   remain the enforcement layer.
+
+### A. Date input UX
+- [x] Reuse `DatePickerInput` (auto-slash DD/MM/YYYY, inline validation, min/max dates) in the
+      Add Property flow Step 3 "Available From" — replaces raw `TextInput`; `minimumDate` = today
+- [x] Auto-slash insertion as digits are typed (`24` → `24/`, `2408` → `24/08/`) — already in
+      `DatePickerInput`; now used consistently in both agreement create and property create
+- [ ] Audit remaining date fields (profile DOB) for the same auto-format treatment
+
+### B. Multi-select chip semantics
+- [x] "Any" tenant-preference chip is mutually exclusive: selecting "Any" clears all specific
+      selections; selecting a specific preference deselects "Any"
+
+### C. Role-based flow gating (mobile)
+- [x] Discover tab: `TENANT` → Browse only (no My Properties, no Add Property FAB)
+- [x] Discover tab: `OWNER` → segmented "Browse / My Properties", defaults to My Properties
+- [x] Discover tab: `BOTH` → segmented control, defaults to Browse
+- [x] Add Property screen: client-side guard blocks `TENANT` role with explanatory banner
+      (backend `RequiresOwnerRole` remains the backstop)
+- [x] Property detail: "Express Interest" CTA and message input hidden for pure `OWNER`;
+      replaced with info banner suggesting role switch to `BOTH`
+- [ ] Profile screen: allow user to upgrade role (`TENANT`/`OWNER` → `BOTH`) via `PATCH /users/me`
+- [ ] Home tab "New Agreement" FAB: add pointer toward "List a Property" for owners
+      (direct-agreement flow is a secondary path; marketplace is primary funnel)
+
+### D. Guest mode — public browsing (traditional marketplace architecture)
+
+> Browsing is the acquisition funnel; walling it behind login kills top-of-funnel.
+> Backend was already correct (`GET /properties*` are `@Public()`); the wall was a
+> blanket `<Redirect>` in the mobile tabs layout.
+
+- [x] Remove forced login redirect from `(tabs)/_layout.tsx` — guests land in the app directly
+- [x] `SignInPrompt` shared component (`components/SignInPrompt.tsx`) — friendly full-screen
+      prompt with "Sign In with Mobile Number" CTA
+- [x] Home / Alerts / Profile tabs render `SignInPrompt` for guests (account-bound content)
+- [x] Browse tab fully public for guests (guest → `BrowseView`, no owner segments)
+- [x] Property detail public for guests; bottom CTA becomes "Sign In to Express Interest"
+      → routes to phone login
+- [x] `PropertyCard` hardened: `ownerName`/`ownerScore` optional (API returns nested
+      `owner.{id,name}`); owner strip hidden when absent; mobile `Property` type updated
+- [x] Seed data: 10 ACTIVE listings (Bengaluru ×4, Chennai ×3, Coimbatore ×3) + 2 Unsplash
+      images each + 3 verified owner accounts — inserted via SQL for local demo/UI review
+- [ ] After sign-in from a gated CTA, return the user to the screen that triggered it
+      (currently lands on Home)
+
+### E. Filter UX overhaul — bottom sheet pattern
+
+> **Bug found:** stacking 3 `FilterBar` (horizontal `ScrollView`) rows directly in a column
+> collapsed each row to ~6-8px tall on react-native-web (nested horizontal `ScrollView`
+> without an explicit height shrinks to near-zero), so all 3 rows visually overlapped and
+> obscured the search bar and first result card.
+> **Design fix:** filters are opt-in UI (tap "Filters" to open), not permanent screen real
+> estate — matches Airbnb/Zillow/99acres. Same principle should extend to other
+> multi-filter screens in the app as they're built.
+
+- [x] `FilterBar` (ui-kit): explicit `height: 40` + `flexShrink: 0` on the ScrollView —
+      fixes the root collapse bug for any future stacked usage
+- [x] New `FiltersSheet` (`components/sheets/FiltersSheet.tsx`) — single bottom sheet with
+      all filter sections (Property Type, Rent Range, Furnishing), "Clear all", and a
+      live "Show N properties" CTA that reflects the current filtered count
+- [x] Browse screen: filter icon opens `FiltersSheet`; badge shows active filter count
+- [x] Active-filter summary row (removable pills, tap × to drop a single filter) shown
+      inline below search bar — quick edit without reopening the sheet
+- [x] Verified live: badge count, sheet open/select/close, result count updates, pill removal
+
+### F. Notifications system (was entirely missing despite checklist claiming otherwise)
+
+> **Finding:** §12b.D claimed "sends push notification to owner/tenant" as done. It was not
+> — `InterestsService` never called any notification code; no notification module existed
+> anywhere in the backend. Interests silently sat in the DB until an owner manually opened
+> Interest Requests. Built the missing in-app notification layer (DB-backed, REST API) as
+> the traditional foundation; real push (FCM) needs device tokens + Firebase credentials we
+> don't have yet — noted as a follow-up, not faked.
+
+- [x] `Notification` entity (`packages/backend/src/notifications/notification.entity.ts`) +
+      `NotificationType` enum in `@trustnest/shared` (`INTEREST_RECEIVED/ACCEPTED/DECLINED`)
+- [x] `NotificationsModule` (service + controller): `GET /notifications`, `PATCH /notifications/:id/read`,
+      `PATCH /notifications/read-all` — all JWT-scoped to the caller
+- [x] `InterestsService` hooked at all three lifecycle points: `create()` → notifies property
+      owner; `accept()` → notifies tenant; `decline()` → notifies tenant
+- [x] Mobile: `NotificationsProvider` (30s poll while session active), wired into header bell
+      badge and the Alerts tab (previously a static "coming soon" placeholder)
+- [x] Verified live end-to-end: tenant expressed interest on a seeded property → owner
+      (real account, phone `+918888888888`) saw bell badge + Alerts card + mark-read/mark-all-read
+- [ ] Real push notifications (FCM) — needs Firebase project + device push token registration;
+      the `NotificationsService.create()` choke point is where that would hook in later
+- [ ] Tap-to-navigate from a notification card to the linked property/agreement (data payload
+      already carries `propertyId`/`interestId`; navigation on tap not yet confirmed working)
+
+### G. Two pre-existing bugs fixed while verifying the above
+
+- [x] `GET /users/me` threw 500 for every request — `PaymentDetails` entity was used in
+      `UsersService.getMe()` but never registered in `app.module.ts`'s TypeORM `entities` array
+- [x] `GET /users/me` then threw `TypeError: user.dob.toISOString is not a function` — TypeORM
+      returns `date`-typed columns as plain strings at runtime despite the `Date | null` entity
+      type; fixed to string-slice instead of calling `.toISOString()`
+- [x] All 10 seeded properties relinked from placeholder seed owners to a real account
+      (`d473ab87-9e1c-4919-bf5a-91a8692255b3`, phone `+918888888888`) so interest notifications
+      have a real recipient
+
+---
+
 ## 13. Testing & QA
 
 - [ ] Contract tests: all pass on Hardhat local node
