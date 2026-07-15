@@ -10,11 +10,13 @@ import { User } from '../users/user.entity';
 import { RequiresKycGuard } from '../common/guards/requires-kyc.guard';
 import { RequiresTenantRoleGuard } from '../common/guards/requires-tenant-role.guard';
 import { PropertiesModule } from '../properties/properties.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PropertyInterest, Property, PropertyImage, Agreement, User]),
     PropertiesModule,
+    NotificationsModule,
   ],
   controllers: [InterestsController],
   providers: [InterestsService, RequiresKycGuard, RequiresTenantRoleGuard],

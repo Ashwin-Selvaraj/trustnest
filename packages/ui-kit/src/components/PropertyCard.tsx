@@ -45,8 +45,8 @@ export interface PropertyCardProps {
   furnishingStatus: FurnishingStatus;
   monthlyRentINR: number;
   depositINR: number;
-  ownerName: string;
-  ownerScore: number | null;
+  ownerName?: string | null;
+  ownerScore?: number | null;
   imageUrl: string | null;
   status: PropertyStatus;
   onPress?: () => void;
@@ -71,7 +71,7 @@ export function PropertyCard({
   style,
 }: PropertyCardProps): React.ReactElement {
   const pill    = STATUS_PILL[status] ?? STATUS_PILL[PropertyStatus.DRAFT];
-  const initials = ownerName
+  const initials = (ownerName ?? '')
     .split(' ')
     .slice(0, 2)
     .map(w => w[0]?.toUpperCase() ?? '')
@@ -123,16 +123,18 @@ export function PropertyCard({
           </Text>
         </View>
 
-        {/* Owner strip */}
-        <View style={styles.ownerStrip}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{initials}</Text>
+        {/* Owner strip — hidden when the card has no owner info */}
+        {ownerName ? (
+          <View style={styles.ownerStrip}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <Text style={styles.ownerName}>{ownerName}</Text>
+            {ownerScore !== null && ownerScore !== undefined && (
+              <Text style={styles.ownerScore}>★ {ownerScore.toFixed(1)}</Text>
+            )}
           </View>
-          <Text style={styles.ownerName}>{ownerName}</Text>
-          {ownerScore !== null && (
-            <Text style={styles.ownerScore}>★ {ownerScore.toFixed(1)}</Text>
-          )}
-        </View>
+        ) : null}
       </View>
     </TouchableOpacity>
   );

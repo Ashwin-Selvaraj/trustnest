@@ -107,3 +107,11 @@ export enum TenantPreference {
   STUDENTS             = 'STUDENTS',
   ANY                  = 'ANY',
 }
+
+// ─── Notifications ─────────────────────────────────────────────────────────────
+
+export enum NotificationType {
+  INTEREST_RECEIVED = 'INTEREST_RECEIVED',
+  INTEREST_ACCEPTED = 'INTEREST_ACCEPTED',
+  INTEREST_DECLINED = 'INTEREST_DECLINED',
+}

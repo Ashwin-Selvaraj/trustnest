@@ -8,7 +8,9 @@ import {
   Button, TextInput, ProgressBar, SectionHeader, Banner,
   colors, spacing, fontSize, fontWeight, borderRadius,
 } from '@trustnest/ui-kit';
-import { BhkType, FurnishingStatus, TenantPreference, PropertyStatus } from '@trustnest/shared';
+import { BhkType, FurnishingStatus, TenantPreference, PropertyStatus, UserRole } from '@trustnest/shared';
+import { DatePickerInput } from '@/components/DatePickerInput';
+import { useAuth } from '@/store/auth.store';
 import { propertiesApi } from '@/api/properties';
 import type { CreatePropertyRequest } from '@/types/api';
 
@@ -91,10 +93,27 @@ const TOTAL_STEPS = 6;
 
 export default function CreatePropertyScreen(): React.ReactElement {
   const router = useRouter();
+  const { state } = useAuth();
   const [step, setStep]     = React.useState(1);
   const [form, setForm]     = React.useState<FormData>(INITIAL_FORM);
+  const [availableFromDate, setAvailableFromDate] = React.useState<Date | null>(null);
   const [errors, setErrors] = React.useState<Partial<Record<keyof FormData, string>>>({});
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Listing is owner-only. Tenants land here only via deep link / stale nav —
+  // block them client-side too (backend RequiresOwnerRole guard is the backstop).
+  if (state.user?.role === UserRole.TENANT) {
+    return (
+      <View style={[styles.flex, styles.guardContainer]}>
+        <Banner variant="warning">
+          Only owners can list properties. Update your role to Owner or Both from your profile to start listing.
+        </Banner>
+        <Button variant="primary" fullWidth onPress={() => router.back()}>
+          Go Back
+        </Button>
+      </View>
+    );
+  }
 
   const set = <K extends keyof FormData>(key: K, value: FormData[K]): void => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -105,6 +124,21 @@ export default function CreatePropertyScreen(): React.ReactElement {
     const arr = form[key] as string[];
     const next = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
     set(key as 'amenities', next as string[]);
+  };
+
+  // "Any" is mutually exclusive with specific preferences: picking it clears
+  // the rest, and picking a specific one clears "Any".
+  const togglePreference = (value: TenantPreference): void => {
+    const current = form.preferredTenants;
+    if (current.includes(value)) {
+      set('preferredTenants', current.filter(v => v !== value));
+      return;
+    }
+    if (value === TenantPreference.ANY) {
+      set('preferredTenants', [TenantPreference.ANY]);
+      return;
+    }
+    set('preferredTenants', [...current.filter(v => v !== TenantPreference.ANY), value]);
   };
 
   // ── Validation ──────────────────────────────────────────────────────────────
@@ -333,15 +367,17 @@ export default function CreatePropertyScreen(): React.ReactElement {
       </View>
 
       <SectionHeader style={styles.sectionGap}>Availability</SectionHeader>
-      <TextInput
+      <DatePickerInput
         label="Available From"
-        placeholder="DD/MM/YYYY"
-        value={form.availableFrom}
-        onChangeText={t => set('availableFrom', t)}
+        value={availableFromDate}
+        onChange={(date, iso) => {
+          setAvailableFromDate(date);
+          const [y, m, d] = iso.split('-');
+          set('availableFrom', `${d}/${m}/${y}`);
+        }}
         error={errors.availableFrom}
         hint="Date the property becomes available"
-        keyboardType="numbers-and-punctuation"
-        maxLength={10}
+        minimumDate={new Date(new Date().setHours(0, 0, 0, 0))}
       />
     </View>
   );
@@ -356,7 +392,7 @@ export default function CreatePropertyScreen(): React.ReactElement {
             <TouchableOpacity
               key={opt.value}
               style={[styles.chip, selected && styles.chipSelected]}
-              onPress={() => toggleMulti('preferredTenants', opt.value)}
+              onPress={() => togglePreference(opt.value)}
             >
               <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{opt.label}</Text>
             </TouchableOpacity>
@@ -508,6 +544,11 @@ function SummaryRow({ label, value }: { label: string; value: string }): React.R
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
+  guardContainer: {
+    padding: spacing.base,
+    gap: spacing.md,
+    justifyContent: 'center',
+  },
 
   progressContainer: {
     paddingHorizontal: spacing.base,

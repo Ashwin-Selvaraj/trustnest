@@ -5,6 +5,7 @@
  * The ApiClient singleton is updated whenever the access token changes.
  */
 import * as React from 'react';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { apiClient } from '../api/client';
 import { authApi } from '../api/auth';
@@ -12,6 +13,40 @@ import type { UserProfile } from '../types/api';
 
 const ACCESS_TOKEN_KEY = 'trustnest_access_token';
 const REFRESH_TOKEN_KEY = 'trustnest_refresh_token';
+
+interface WebStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+function getWebStorage(): WebStorage | undefined {
+  return (globalThis as { localStorage?: WebStorage }).localStorage;
+}
+
+// expo-secure-store has no web implementation (its web module is an empty
+// stub), so fall back to localStorage there. Not encrypted-at-rest on web,
+// but matches what SecureStore itself does under the hood on that platform.
+const tokenStorage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') return getWebStorage()?.getItem(key) ?? null;
+    return SecureStore.getItemAsync(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      getWebStorage()?.setItem(key, value);
+      return;
+    }
+    await SecureStore.setItemAsync(key, value);
+  },
+  async deleteItem(key: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      getWebStorage()?.removeItem(key);
+      return;
+    }
+    await SecureStore.deleteItemAsync(key);
+  },
+};
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
@@ -86,8 +121,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   React.useEffect(() => {
     void (async () => {
       try {
-        const accessToken = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
-        const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+        const accessToken = await tokenStorage.getItem(ACCESS_TOKEN_KEY);
+        const refreshToken = await tokenStorage.getItem(REFRESH_TOKEN_KEY);
         if (accessToken) apiClient.setAccessToken(accessToken);
         dispatch({ type: 'RESTORE_TOKEN', accessToken, refreshToken });
       } catch {
@@ -97,15 +132,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   }, []);
 
   const signIn = async (accessToken: string, refreshToken: string): Promise<void> => {
-    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+    await tokenStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    await tokenStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
     apiClient.setAccessToken(accessToken);
     dispatch({ type: 'SIGN_IN', accessToken, refreshToken });
   };
 
   const signOut = async (): Promise<void> => {
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    await tokenStorage.deleteItem(ACCESS_TOKEN_KEY);
+    await tokenStorage.deleteItem(REFRESH_TOKEN_KEY);
     apiClient.setAccessToken(null);
     dispatch({ type: 'SIGN_OUT' });
   };

@@ -46,6 +46,7 @@ export function FilterBar({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
       contentContainerStyle={[styles.container, style]}
     >
       {filters.map((filter) => {
@@ -78,6 +79,14 @@ export function FilterBar({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  // Explicit height + flexShrink: 0 — without this, react-native-web collapses
+  // a horizontal ScrollView nested in a flex column to a few px tall, causing
+  // stacked FilterBars to overlap instead of each occupying their own row.
+  scroll: {
+    height:     40,
+    flexGrow:   0,
+    flexShrink: 0,
+  },
   container: {
     flexDirection:  'row',
     paddingHorizontal: spacing.base,

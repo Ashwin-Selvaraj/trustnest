@@ -13,8 +13,9 @@ import { PropertyImage } from '../properties/property-image.entity';
 import { Agreement } from '../agreements/agreement.entity';
 import { User } from '../users/user.entity';
 import { CreateInterestDto } from './dto/create-interest.dto';
-import { InterestStatus, AgreementStatus } from '@trustnest/shared';
+import { InterestStatus, AgreementStatus, NotificationType } from '@trustnest/shared';
 import { agreementIdToBytes32 } from '@trustnest/sdk';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class InterestsService {
@@ -24,6 +25,7 @@ export class InterestsService {
     @InjectRepository(PropertyImage)    private readonly imageRepo: Repository<PropertyImage>,
     @InjectRepository(Agreement)        private readonly agreementRepo: Repository<Agreement>,
     @InjectRepository(User)             private readonly userRepo: Repository<User>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(
@@ -53,7 +55,18 @@ export class InterestsService {
       status: InterestStatus.PENDING,
       message: dto.message ?? null,
     });
-    return this.interestRepo.save(interest);
+    const saved = await this.interestRepo.save(interest);
+
+    const tenant = await this.userRepo.findOne({ where: { id: tenantId } });
+    await this.notificationsService.create(
+      property.ownerId,
+      NotificationType.INTEREST_RECEIVED,
+      'New interest in your property',
+      `${tenant?.name ?? 'A tenant'} is interested in "${property.title}".`,
+      { propertyId, interestId: saved.id },
+    );
+
+    return saved;
   }
 
   async findByProperty(
@@ -132,6 +145,14 @@ export class InterestsService {
     // Write agreementId back to interest
     await this.interestRepo.update(interestId, { agreementId: savedAgreement.id });
 
+    await this.notificationsService.create(
+      interest.tenantId,
+      NotificationType.INTEREST_ACCEPTED,
+      'Your interest was accepted',
+      `The owner accepted your interest in "${property.title}". Review and confirm the agreement.`,
+      { propertyId, interestId, agreementId: savedAgreement.id },
+    );
+
     return { interestId, agreementId: savedAgreement.id };
   }
 
@@ -148,6 +169,15 @@ export class InterestsService {
     if (!interest) throw new NotFoundException('Interest not found');
 
     await this.interestRepo.update(interestId, { status: InterestStatus.DECLINED });
+
+    await this.notificationsService.create(
+      interest.tenantId,
+      NotificationType.INTEREST_DECLINED,
+      'Interest declined',
+      `The owner declined your interest in "${property.title}".`,
+      { propertyId, interestId },
+    );
+
     return { ok: true };
   }
 

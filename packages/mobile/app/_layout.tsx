@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import { AuthProvider } from '@/store/auth.store';
 import { UserContextProvider } from '@/store/user-context';
+import { NotificationsProvider } from '@/store/notifications.store';
 
 /**
  * Root layout — declares all screens unconditionally.
@@ -90,7 +91,9 @@ export default function RootLayout(): React.ReactElement {
   return (
     <AuthProvider>
       <UserContextProvider>
-        <RootLayoutNav />
+        <NotificationsProvider>
+          <RootLayoutNav />
+        </NotificationsProvider>
       </UserContextProvider>
     </AuthProvider>
   );

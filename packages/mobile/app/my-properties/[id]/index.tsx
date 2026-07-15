@@ -97,7 +97,7 @@ export default function ManagePropertyScreen(): React.ReactElement {
         furnishingStatus={property.furnishingStatus}
         monthlyRentINR={Number(property.monthlyRentINR)}
         depositINR={Number(property.depositINR)}
-        ownerName={property.ownerName}
+        ownerName={property.owner?.name ?? property.ownerName}
         ownerScore={property.ownerScore}
         imageUrl={primaryImg}
         status={property.status}

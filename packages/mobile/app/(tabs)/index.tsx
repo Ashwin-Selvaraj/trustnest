@@ -16,12 +16,23 @@ import {
 import { UserRole } from '@trustnest/shared';
 import { useAgreements } from '@/hooks/useAgreements';
 import { useAuth } from '@/store/auth.store';
+import { SignInPrompt } from '../../components/SignInPrompt';
 import type { Agreement } from '@/types/api';
 
 export default function HomeScreen(): React.ReactElement {
   const { state } = useAuth();
   const { agreements, isLoading, error, refresh, loadMore } = useAgreements();
   const [refreshing, setRefreshing] = React.useState(false);
+
+  if (!state.isAuthenticated) {
+    return (
+      <SignInPrompt
+        emoji="📋"
+        title="Your agreements live here"
+        message="Sign in to create rental agreements, pay deposits, and track your tenancy."
+      />
+    );
+  }
 
   const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);

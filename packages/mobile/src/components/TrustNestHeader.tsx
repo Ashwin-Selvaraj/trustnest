@@ -16,6 +16,7 @@ import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, spacing, fontSize, fontWeight } from '@trustnest/ui-kit';
+import { useNotifications } from '../store/notifications.store';
 
 // ─── House logo mark (simplified) ────────────────────────────────────────────
 
@@ -78,14 +79,9 @@ const bellStyles = StyleSheet.create({
 
 // ─── Header component ─────────────────────────────────────────────────────────
 
-interface TrustNestHeaderProps {
-  hasUnreadNotifications?: boolean;
-}
-
-export function TrustNestHeader({
-  hasUnreadNotifications = false,
-}: TrustNestHeaderProps): React.ReactElement {
+export function TrustNestHeader(): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { unreadCount } = useNotifications();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
@@ -102,7 +98,7 @@ export function TrustNestHeader({
         hitSlop={8}
         activeOpacity={0.7}
       >
-        <BellIcon hasUnread={hasUnreadNotifications} />
+        <BellIcon hasUnread={unreadCount > 0} />
       </TouchableOpacity>
     </View>
   );

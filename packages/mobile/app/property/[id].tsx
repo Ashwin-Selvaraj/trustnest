@@ -9,6 +9,8 @@ import {
   colors, spacing, fontSize, fontWeight, borderRadius,
   BhkType, FurnishingStatus, PropertyStatus, InterestStatus,
 } from '@trustnest/ui-kit';
+import { UserRole } from '@trustnest/shared';
+import { useAuth } from '@/store/auth.store';
 import { propertiesApi } from '@/api/properties';
 import type { Property, PropertyInterest } from '@/types/api';
 
@@ -36,6 +38,12 @@ function formatDate(dateStr: string): string {
 export default function PropertyDetailScreen(): React.ReactElement {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router  = useRouter();
+  const { state: authState } = useAuth();
+  const isGuest = !authState.isAuthenticated;
+  // Expressing interest is a tenant action; pure owners browse read-only,
+  // guests are prompted to sign in.
+  const canExpressInterest =
+    authState.user?.role === UserRole.TENANT || authState.user?.role === UserRole.BOTH;
 
   const [property, setProperty]   = React.useState<Property | null>(null);
   const [interest, setInterest]   = React.useState<PropertyInterest | null>(null);
@@ -107,7 +115,8 @@ export default function PropertyDetailScreen(): React.ReactElement {
   }
 
   const images = property.images.map(i => i.url);
-  const ownerInitial = property.ownerName?.[0]?.toUpperCase() ?? '?';
+  const ownerDisplayName = property.owner?.name ?? property.ownerName ?? 'Owner';
+  const ownerInitial = ownerDisplayName[0]?.toUpperCase() ?? '?';
 
   return (
     <View style={styles.container}>
@@ -179,8 +188,8 @@ export default function PropertyDetailScreen(): React.ReactElement {
                 <Text style={styles.ownerAvatarText}>{ownerInitial}</Text>
               </View>
               <View>
-                <Text style={styles.ownerName}>{property.ownerName}</Text>
-                {property.ownerScore !== null && (
+                <Text style={styles.ownerName}>{ownerDisplayName}</Text>
+                {property.ownerScore != null && (
                   <Text style={styles.ownerScore}>★ {property.ownerScore.toFixed(1)}</Text>
                 )}
               </View>
@@ -196,7 +205,7 @@ export default function PropertyDetailScreen(): React.ReactElement {
           ) : null}
 
           {/* Interest message */}
-          {interest === null && property.status === PropertyStatus.ACTIVE && (
+          {canExpressInterest && interest === null && property.status === PropertyStatus.ACTIVE && (
             <RNTextInput
               style={styles.messageInput}
               placeholder="Add a message (optional)"
@@ -216,7 +225,19 @@ export default function PropertyDetailScreen(): React.ReactElement {
 
       {/* Fixed CTA bar */}
       <View style={styles.ctaBar}>
-        {interest === null ? (
+        {isGuest ? (
+          <Button
+            variant="primary"
+            fullWidth
+            onPress={() => router.push('/(auth)/phone')}
+          >
+            Sign In to Express Interest
+          </Button>
+        ) : !canExpressInterest ? (
+          <Banner variant="info">
+            You're browsing as an owner. Switch your role to Both from your profile to rent a place.
+          </Banner>
+        ) : interest === null ? (
           <Button
             variant="primary"
             fullWidth

@@ -7,12 +7,13 @@ import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useAuth } from '@/store/auth.store';
 import {
-  PropertyCard, FilterBar, Banner, FAB,
+  PropertyCard, Banner, FAB,
   colors, spacing, fontSize, fontWeight, borderRadius,
   BhkType, FurnishingStatus, PropertyStatus,
 } from '@trustnest/ui-kit';
 import { UserRole } from '@trustnest/shared';
 import { propertiesApi } from '@/api/properties';
+import { FiltersSheet, type FilterSection } from '../../../components/sheets/FiltersSheet';
 import type { Property } from '@/types/api';
 
 // ─── Inline SVG icons for search bar ─────────────────────────────────────────
@@ -57,6 +58,12 @@ const FURNISHING_FILTERS = [
   { key: FurnishingStatus.FULLY_FURNISHED,label: 'Fully'       },
 ];
 
+const FILTER_SECTIONS: FilterSection[] = [
+  { key: 'bhk',        label: 'Property Type', options: BHK_FILTERS },
+  { key: 'rent',       label: 'Rent Range',    options: RENT_FILTERS },
+  { key: 'furnishing', label: 'Furnishing',    options: FURNISHING_FILTERS },
+];
+
 // ─── Browse View ─────────────────────────────────────────────────────────────
 
 function BrowseView(): React.ReactElement {
@@ -65,6 +72,7 @@ function BrowseView(): React.ReactElement {
   const [selectedBhk, setSelectedBhk]     = React.useState<string[]>([]);
   const [selectedRent, setSelectedRent]   = React.useState<string[]>([]);
   const [selectedFurn, setSelectedFurn]   = React.useState<string[]>([]);
+  const [filtersSheetOpen, setFiltersSheetOpen] = React.useState(false);
   const [properties, setProperties]       = React.useState<Property[]>([]);
   const [total, setTotal]                 = React.useState(0);
   const [page, setPage]                   = React.useState(1);
@@ -134,9 +142,25 @@ function BrowseView(): React.ReactElement {
     }
   }, [endReached, loading, page, loadProperties]);
 
-  const hasFilters = selectedBhk.length > 0 || selectedRent.length > 0 || selectedFurn.length > 0;
+  const activeFilterCount = selectedBhk.length + selectedRent.length + selectedFurn.length;
+  const hasFilters = activeFilterCount > 0;
   const hasResults = properties.length > 0;
   const isFiltered = hasFilters || searchText.trim().length > 0;
+
+  const filterSelections: Record<string, string[]> = {
+    bhk: selectedBhk, rent: selectedRent, furnishing: selectedFurn,
+  };
+  const setBySection: Record<string, (v: string[]) => void> = {
+    bhk: setSelectedBhk, rent: setSelectedRent, furnishing: setSelectedFurn,
+  };
+  const handleFilterChange = (sectionKey: string, values: string[]): void => {
+    setBySection[sectionKey]?.(values);
+  };
+  const handleClearFilters = (): void => {
+    setSelectedBhk([]);
+    setSelectedRent([]);
+    setSelectedFurn([]);
+  };
 
   return (
     <View style={styles.flex}>
@@ -160,43 +184,53 @@ function BrowseView(): React.ReactElement {
         </View>
         <TouchableOpacity
           style={[styles.filterIconBtn, hasFilters && styles.filterIconBtnActive]}
-          onPress={() => {
-            // Toggle all filters off when active, otherwise show BHK filter
-            if (hasFilters) {
-              setSelectedBhk([]);
-              setSelectedRent([]);
-              setSelectedFurn([]);
-            }
-          }}
+          onPress={() => setFiltersSheetOpen(true)}
           activeOpacity={0.75}
         >
           <FilterIcon active={hasFilters} />
+          {activeFilterCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
-      {/* Filters — only shown when there are results or active filters */}
-      {(hasResults || hasFilters) && (
-        <>
-          <FilterBar
-            filters={BHK_FILTERS}
-            selected={selectedBhk}
-            onFilterChange={setSelectedBhk}
-            style={styles.filterBarPad}
-          />
-          <FilterBar
-            filters={RENT_FILTERS}
-            selected={selectedRent}
-            onFilterChange={setSelectedRent}
-            style={styles.filterBarPad}
-          />
-          <FilterBar
-            filters={FURNISHING_FILTERS}
-            selected={selectedFurn}
-            onFilterChange={setSelectedFurn}
-            style={styles.filterBarPad}
-          />
-        </>
+      {/* Active filter summary — compact, tap × to remove; full editing via the sheet */}
+      {hasFilters && (
+        <View style={styles.activeFiltersRow}>
+          {[...selectedBhk, ...selectedRent, ...selectedFurn].map((key) => {
+            const option = [...BHK_FILTERS, ...RENT_FILTERS, ...FURNISHING_FILTERS]
+              .find(f => f.key === key);
+            if (!option) return null;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={styles.activeFilterPill}
+                onPress={() => {
+                  if (selectedBhk.includes(key))  setSelectedBhk(selectedBhk.filter(k => k !== key));
+                  if (selectedRent.includes(key)) setSelectedRent(selectedRent.filter(k => k !== key));
+                  if (selectedFurn.includes(key)) setSelectedFurn(selectedFurn.filter(k => k !== key));
+                }}
+              >
+                <Text style={styles.activeFilterText}>{option.label}</Text>
+                <Text style={styles.activeFilterRemove}>✕</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
+
+      <FiltersSheet
+        visible={filtersSheetOpen}
+        sections={FILTER_SECTIONS}
+        selected={filterSelections}
+        resultCount={total}
+        onChange={handleFilterChange}
+        onClear={handleClearFilters}
+        onApply={() => setFiltersSheetOpen(false)}
+        onDismiss={() => setFiltersSheetOpen(false)}
+      />
 
       {/* Results */}
       <FlatList
@@ -261,7 +295,7 @@ function BrowseView(): React.ReactElement {
               furnishingStatus={item.furnishingStatus}
               monthlyRentINR={Number(item.monthlyRentINR)}
               depositINR={Number(item.depositINR)}
-              ownerName={item.ownerName}
+              ownerName={item.owner?.name ?? item.ownerName}
               ownerScore={item.ownerScore}
               imageUrl={primaryImg}
               status={item.status}
@@ -334,7 +368,7 @@ function MyPropertiesView(): React.ReactElement {
               furnishingStatus={item.furnishingStatus}
               monthlyRentINR={Number(item.monthlyRentINR)}
               depositINR={Number(item.depositINR)}
-              ownerName={item.ownerName ?? state.user?.fullName ?? ''}
+              ownerName={item.owner?.name ?? item.ownerName ?? state.user?.fullName ?? ''}
               ownerScore={item.ownerScore}
               imageUrl={primaryImg}
               status={item.status}
@@ -357,17 +391,24 @@ export default function BrowseScreen(): React.ReactElement {
   const { state } = useAuth();
   const role = state.user?.role;
 
-  const [tab, setTab] = React.useState<'browse' | 'mine'>('browse');
+  // Owners land on their listings first; everyone else starts in Browse.
+  const [tab, setTab] = React.useState<'browse' | 'mine'>(
+    role === UserRole.OWNER ? 'mine' : 'browse',
+  );
 
-  if (role === UserRole.OWNER) {
-    return <MyPropertiesView />;
-  }
+  // The user profile loads async — when the role resolves to OWNER after
+  // mount, move them to their listings (their primary job on this tab).
+  React.useEffect(() => {
+    if (role === UserRole.OWNER) setTab('mine');
+  }, [role]);
 
-  if (role === UserRole.TENANT) {
+  // Guests and tenants can only browse — listing (My Properties) is owner/both-only.
+  if (!state.isAuthenticated || !role || role === UserRole.TENANT) {
     return <BrowseView />;
   }
 
-  // BOTH — segmented control
+  // OWNER and BOTH — segmented control; owners can browse the market too,
+  // they just can't express interest (tenant/both-only, gated on detail screen).
   return (
     <View style={styles.flex}>
       <View style={styles.segmentRow}>
@@ -451,8 +492,51 @@ const styles = StyleSheet.create({
     borderColor:     colors.primary,
     backgroundColor: colors.primaryLight,
   },
-  filterBarPad: {
-    paddingVertical: spacing.xs,
+  filterBadge: {
+    position:        'absolute',
+    top:             -4,
+    right:           -4,
+    minWidth:        18,
+    height:          18,
+    borderRadius:    9,
+    backgroundColor: colors.primary,
+    alignItems:      'center',
+    justifyContent:  'center',
+    paddingHorizontal: 4,
+    borderWidth:     2,
+    borderColor:     '#FFFFFF',
+  },
+  filterBadgeText: {
+    fontSize:   10,
+    fontWeight: fontWeight.bold,
+    color:      '#FFFFFF',
+  },
+  activeFiltersRow: {
+    flexDirection:     'row',
+    flexWrap:           'wrap',
+    gap:                spacing.xs,
+    paddingHorizontal:  spacing.base,
+    paddingBottom:      spacing.sm,
+    backgroundColor:    '#FFFFFF',
+  },
+  activeFilterPill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:                6,
+    paddingVertical:    6,
+    paddingHorizontal:  12,
+    borderRadius:       borderRadius.full,
+    backgroundColor:    colors.primaryLight,
+  },
+  activeFilterText: {
+    fontSize:   fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color:      colors.primary,
+  },
+  activeFilterRemove: {
+    fontSize:   fontSize.xs,
+    color:      colors.primary,
+    fontWeight: fontWeight.bold,
   },
   listContent: {
     padding:    spacing.base,
