@@ -1,14 +1,26 @@
-import { ethers } from 'hardhat';
+import { ethers, network } from 'hardhat';
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   const operatorAddress = process.env['OPERATOR_ADDRESS'] ?? deployer.address;
-  const usdcAddress     = process.env['USDC_ADDRESS'] ?? ethers.ZeroAddress;
+  let usdcAddress        = process.env['USDC_ADDRESS'] ?? '';
 
   console.log('Deployer :', deployer.address);
   console.log('Operator :', operatorAddress);
+  console.log('Network  :', network.name);
+  console.log('---');
+
+  // Testnets/local: deploy a mintable MockUSDC if no real USDC address was given,
+  // so EscrowVault has an ERC20 to work with without depending on a third-party faucet.
+  if (!usdcAddress && network.name !== 'mainnet') {
+    const MockUSDCFactory = await ethers.getContractFactory('MockUSDC');
+    const mockUsdc = await MockUSDCFactory.deploy();
+    await mockUsdc.waitForDeployment();
+    usdcAddress = await mockUsdc.getAddress();
+    console.log('MockUSDC (deployed) :', usdcAddress);
+  }
+
   console.log('USDC     :', usdcAddress);
-  console.log('Network  :', (await ethers.provider.getNetwork()).name);
   console.log('---');
 
   const Registry = await ethers.getContractFactory('TrustNestRegistry');
