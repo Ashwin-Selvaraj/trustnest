@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { useAuth } from '@/store/auth.store';
 import {
-  PropertyCard, Banner, FAB,
+  PropertyCard, PropertyCardSkeleton, Banner, FAB,
   colors, spacing, fontSize, fontWeight, borderRadius,
   BhkType, FurnishingStatus, PropertyStatus,
 } from '@trustnest/ui-kit';
@@ -245,7 +245,12 @@ function BrowseView(): React.ReactElement {
         onEndReachedThreshold={0.3}
         ListEmptyComponent={
           loading ? (
-            <ActivityIndicator style={styles.loader} color={colors.primary} />
+            /* Skeletons matching the card silhouette — perceived performance */
+            <View style={styles.skeletonStack}>
+              <PropertyCardSkeleton />
+              <PropertyCardSkeleton />
+              <PropertyCardSkeleton />
+            </View>
           ) : isFiltered ? (
             /* Empty state — no results from filters */
             <View style={styles.emptyState}>
@@ -342,16 +347,18 @@ function MyPropertiesView(): React.ReactElement {
 
   return (
     <View style={styles.flex}>
-      {loading && !refreshing && (
-        <ActivityIndicator style={styles.loader} color={colors.primary} />
-      )}
       <FlatList
         data={properties}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
         ListEmptyComponent={
-          loading ? null : (
+          loading && !refreshing ? (
+            <View style={styles.skeletonStack}>
+              <PropertyCardSkeleton />
+              <PropertyCardSkeleton />
+            </View>
+          ) : loading ? null : (
             <Banner variant="info">You haven't listed any properties yet. Tap + to add one.</Banner>
           )
         }
@@ -551,6 +558,9 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginVertical: spacing.base,
+  },
+  skeletonStack: {
+    gap: spacing.md,
   },
   emptyState: {
     flex:          1,

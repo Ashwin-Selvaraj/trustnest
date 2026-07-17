@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import {
-  AgreementCard, Banner, FAB,
+  AgreementCard, Banner, FAB, ListRowSkeleton,
   colors, spacing, fontSize, fontWeight,
 } from '@trustnest/ui-kit';
 import { UserRole } from '@trustnest/shared';
@@ -96,7 +96,11 @@ export default function HomeScreen(): React.ReactElement {
         ListEmptyComponent={<ListEmpty />}
         ListHeaderComponent={
           isLoading && agreements.length === 0 ? (
-            <ActivityIndicator color={colors.primary} style={styles.loader} />
+            <View style={styles.skeletonStack}>
+              <ListRowSkeleton />
+              <ListRowSkeleton />
+              <ListRowSkeleton />
+            </View>
           ) : null
         }
         refreshControl={
@@ -125,6 +129,7 @@ const styles = StyleSheet.create({
   },
   card:       { marginBottom: spacing.sm },
   loader:     { marginTop: spacing.xl },
+  skeletonStack: { gap: spacing.sm, marginTop: spacing.sm },
   centeredContainer: {
     flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg,
   },

@@ -5,12 +5,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  PhotoGallery, Card, InfoRow, Banner, Button,
+  PhotoGallery, Card, InfoRow, Banner, Button, Skeleton,
   colors, spacing, fontSize, fontWeight, borderRadius,
   BhkType, FurnishingStatus, PropertyStatus, InterestStatus,
 } from '@trustnest/ui-kit';
 import { UserRole } from '@trustnest/shared';
 import { useAuth } from '@/store/auth.store';
+import { useToast } from '@/store/toast.store';
 import { propertiesApi } from '@/api/properties';
 import type { Property, PropertyInterest } from '@/types/api';
 
@@ -39,6 +40,7 @@ export default function PropertyDetailScreen(): React.ReactElement {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router  = useRouter();
   const { state: authState } = useAuth();
+  const { showToast } = useToast();
   const isGuest = !authState.isAuthenticated;
   // Expressing interest is a tenant action; pure owners browse read-only,
   // guests are prompted to sign in.
@@ -78,6 +80,7 @@ export default function PropertyDetailScreen(): React.ReactElement {
     try {
       const created = await propertiesApi.expressInterest(id, { message: message.trim() || undefined });
       setInterest(created);
+      showToast('Interest sent to the owner');
     } catch (e) {
       setError('Failed to express interest. Please try again.');
     } finally {
@@ -99,9 +102,20 @@ export default function PropertyDetailScreen(): React.ReactElement {
   };
 
   if (loading) {
+    // Shape-matched skeleton: gallery → title → chips → pricing card silhouette
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.container}>
+        <Skeleton height={260} radius={0} />
+        <View style={styles.skeletonBody}>
+          <Skeleton width="85%" height={24} />
+          <Skeleton width="50%" height={15} />
+          <View style={styles.skeletonChipRow}>
+            <Skeleton width={72} height={28} radius={borderRadius.full} />
+            <Skeleton width={110} height={28} radius={borderRadius.full} />
+          </View>
+          <Skeleton height={120} radius={borderRadius.md} />
+          <Skeleton height={150} radius={borderRadius.md} />
+        </View>
       </View>
     );
   }
@@ -233,6 +247,11 @@ export default function PropertyDetailScreen(): React.ReactElement {
           >
             Sign In to Express Interest
           </Button>
+        ) : !authState.user ? (
+          /* Authenticated but profile still rehydrating — don't misclassify the role */
+          <Button variant="primary" fullWidth loading disabled>
+            Loading…
+          </Button>
         ) : !canExpressInterest ? (
           <Banner variant="info">
             You're browsing as an owner. Switch your role to Both from your profile to rent a place.
@@ -277,6 +296,8 @@ export default function PropertyDetailScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   container:   { flex: 1, backgroundColor: '#FFFFFF' },
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  skeletonBody:    { padding: spacing.base, gap: spacing.md },
+  skeletonChipRow: { flexDirection: 'row', gap: spacing.sm },
   errorText:   { color: colors.danger, fontSize: fontSize.base },
   scroll:      { paddingBottom: spacing.xl },
   content:     { padding: spacing.base, gap: spacing.base },

@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking';
 import { AuthProvider } from '@/store/auth.store';
 import { UserContextProvider } from '@/store/user-context';
 import { NotificationsProvider } from '@/store/notifications.store';
+import { ToastProvider } from '@/store/toast.store';
 
 /**
  * Root layout — declares all screens unconditionally.
@@ -92,7 +93,9 @@ export default function RootLayout(): React.ReactElement {
     <AuthProvider>
       <UserContextProvider>
         <NotificationsProvider>
-          <RootLayoutNav />
+          <ToastProvider>
+            <RootLayoutNav />
+          </ToastProvider>
         </NotificationsProvider>
       </UserContextProvider>
     </AuthProvider>

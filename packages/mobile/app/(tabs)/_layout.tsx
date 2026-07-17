@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Tabs } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { IconHome, IconBrowse, IconBell, IconPerson } from '@trustnest/ui-kit';
 import { useAuth } from '@/store/auth.store';
 import { TrustNestHeader } from '@/components/TrustNestHeader';
 
@@ -48,9 +49,7 @@ export default function TabsLayout(): React.ReactElement {
         options={{
           title: 'Home',
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => (
-            <TabIcon emoji="🏠" color={String(color)} />
-          ),
+          tabBarIcon: ({ color }) => <IconHome color={String(color)} />,
         }}
       />
       <Tabs.Screen
@@ -58,9 +57,7 @@ export default function TabsLayout(): React.ReactElement {
         options={{
           title: 'Browse',
           tabBarLabel: 'Browse',
-          tabBarIcon: ({ color }) => (
-            <TabIcon emoji="🔍" color={String(color)} />
-          ),
+          tabBarIcon: ({ color }) => <IconBrowse color={String(color)} />,
         }}
       />
       <Tabs.Screen
@@ -68,9 +65,7 @@ export default function TabsLayout(): React.ReactElement {
         options={{
           title: 'Alerts',
           tabBarLabel: 'Alerts',
-          tabBarIcon: ({ color }) => (
-            <TabIcon emoji="🔔" color={String(color)} />
-          ),
+          tabBarIcon: ({ color }) => <IconBell color={String(color)} />,
         }}
       />
       <Tabs.Screen
@@ -78,16 +73,9 @@ export default function TabsLayout(): React.ReactElement {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color }) => (
-            <TabIcon emoji="👤" color={String(color)} />
-          ),
+          tabBarIcon: ({ color }) => <IconPerson color={String(color)} />,
         }}
       />
     </Tabs>
   );
-}
-
-function TabIcon({ emoji }: { emoji: string; color: string }): React.ReactElement {
-  const { Text } = require('react-native') as typeof import('react-native');
-  return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
 }

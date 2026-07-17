@@ -125,6 +125,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
         const refreshToken = await tokenStorage.getItem(REFRESH_TOKEN_KEY);
         if (accessToken) apiClient.setAccessToken(accessToken);
         dispatch({ type: 'RESTORE_TOKEN', accessToken, refreshToken });
+
+        // Rehydrate the user profile — without this, role-gated UI has no
+        // role after an app restart and misclassifies the session.
+        if (accessToken) {
+          try {
+            const { usersApi } = await import('../api/users');
+            const user = await usersApi.getMe();
+            dispatch({ type: 'SET_USER', user });
+          } catch {
+            // token may be expired; screens handle a null user via guards
+          }
+        }
       } catch {
         dispatch({ type: 'RESTORE_TOKEN', accessToken: null, refreshToken: null });
       }
