@@ -15,21 +15,33 @@
 
 ---
 
-## 1. Phase 1 Closeout — On-Chain Path (blocker for everything below)
+## 1. Phase 1 Closeout — On-Chain Path ✅ COMPLETE (July 2026)
 
-> The blockchain job queue has never successfully processed a job: the operator wallet
-> env vars are empty and the wallet has no gas. Until this section is done, escrow,
-> NFTs and SBTs exist only as Postgres rows.
+> ~~The blockchain job queue has never successfully processed a job~~ **Done.** All 5
+> contracts live on Amoy, operator funded, job queue processing real transactions,
+> and the full escrow lifecycle verified end-to-end on-chain.
 
-- [ ] Write `scripts/generate-operator-key.ts` — generates a random wallet, encrypts the
-      private key with `MASTER_ENCRYPTION_KEY` via `crypto.util.ts#encryptValue`, prints
-      `OPERATOR_KEY_ENCRYPTED` / `OPERATOR_KEY_IV` / address to fund
-- [ ] Fund operator wallet with Amoy MATIC (faucet) + testnet USDC
-- [ ] Deploy all 4 contracts to Amoy; update `CONTRACT_ADDRESSES` in `@trustnest/shared`
-- [ ] Clear stale `blockchain_jobs` backlog (600+ failed REGISTER_USER retries in dev DB)
-- [ ] Add `MAX_ATTEMPTS` dead-letter behaviour: after N failures, mark job `DEAD` and
-      surface in admin — never retry forever again (the attempt-616 incident)
-- [ ] Smoke test: register → mint agreement NFT → deposit → release → SBT, all on Amoy
+- [x] `packages/backend/src/scripts/generate-operator-key.ts` — generates a random wallet,
+      encrypts via `crypto.util.ts#encryptValue`, prints env values + address to fund
+      (run: `MASTER_ENCRYPTION_KEY=... node dist/scripts/generate-operator-key.js`)
+- [x] Operator wallet `0x8D20D4c42826Ff1Bb3AEc7aFC371602f5c667Df0` funded with Amoy POL;
+      test USDC via mintable `MockUSDC` (open `mint()`, no faucet dependency)
+- [x] All contracts deployed to Amoy + `CONTRACT_ADDRESSES` updated:
+      Registry `0x5AF9…1feC` · EscrowVault `0x958A…0113` · AgreementNFT `0x3cED…0353` ·
+      ReputationSBT `0xDC9F…89C7` · MockUSDC `0xE5eA…4775` (`USDC_AMOY_MOCK_ADDRESS`)
+- [x] Stale `blockchain_jobs` backlog cleared — the 636-attempt zombie REGISTER_USER job
+      was reset and finally succeeded against the real Registry; queue is now all-DONE
+- [x] `MAX_ATTEMPTS` dead-letter behaviour: root cause found and fixed — terminal failures
+      were set to `FAILED` + `processAfter=null`, which `getPendingJobs()` picks up
+      immediately (hence 636 attempts). New `JobStatus.DEAD` is never auto-retried;
+      surfaced in `GET /admin/jobs`; `POST /admin/jobs/:id/retry` revives with a fresh
+      attempt budget (resets `attempts` to 0)
+- [x] Smoke test PASSED on Amoy (`packages/backend/src/scripts/smoke-test-amoy.ts`):
+      mint 500 USDC → register tenant+owner → dual AgreementNFT mint (#1/#2) →
+      deposit 500 USDC into vault → release with 50 USDC deduction (tenant 450 /
+      owner 50 verified by on-chain balances) → SBTs minted, scoreOf reads 5.0/4.0.
+      7 transactions, 0.046 POL total gas, exercised through the same SDK path the
+      backend job queue uses
 
 ## 2. Phase 1 Closeout — Real Providers
 
@@ -196,17 +208,29 @@
 
 - [ ] **Token consolidation**: single source of truth in `@trustnest/ui-kit/theme` —
       port anything still hardcoded (`#FFFFFF`, `#F3F4F6` litter several screens)
-- [ ] **Skeleton loaders** (ui-kit `Skeleton` component): browse feed, property detail,
-      agreements list, alerts — replace bare spinners
-- [ ] **Micro-interactions** (react-native-reanimated): filter sheet spring, heart pop on
-      save, pull-to-refresh, button press scale, badge count transitions
+- [x] **Skeleton loaders** — ui-kit `Skeleton` + `PropertyCardSkeleton` + `ListRowSkeleton`
+      (shared synchronized pulse so multiple skeletons breathe together); wired into
+      browse feed, My Properties, alerts, agreements list (Home), and property detail
+- [x] **Micro-interactions** — core `Animated` API, no new native deps (Reanimated would
+      force a dev-client rebuild): button/FAB press-scale (already existed), cover-image
+      fade-in on load (native only — RN-web freezes JS-driven fades mid-flight on FlatList
+      re-render, so web renders instantly), filter sheet slide. Heart-pop lands with
+      Saved properties (§9); badge transitions with push (§8)
 - [ ] **Empty/error states**: designed illustrations + retry actions on every list screen
       (browse no-results shipped in Phase 1; bring the rest to that bar)
-- [ ] **Toast system**: unified non-blocking feedback (replace remaining `Alert.alert`
-      success cases; keep Alert for destructive confirms)
-- [ ] **Tab bar icons**: replace emoji with the ui-kit SVG icon set (Phase 1 §12c.B note)
-- [ ] **DOB auto-format** on profile setup (same digits→slashes formatter as
-      DatePickerInput — Phase 1 §12e.A open item)
+- [x] **Toast system** — ui-kit `Toast` (slide-up + fade, auto-dismiss, dark pill) +
+      mobile `ToastProvider`/`useToast`; wired: express-interest success, mark-all-read.
+      Remaining `Alert.alert`s are action-required dialogs (photo source, UPI-app-missing,
+      destructive confirms) which correctly stay as alerts per the feedback hierarchy
+- [x] **Tab bar icons** — emoji replaced with the ui-kit SVG icon set (icons exported
+      individually from TabBar for expo-router `<Tabs>` use)
+- [x] **DOB auto-format** on profile setup — replaced brittle length-2/5 slash insertion
+      with derive-from-digits formatter (same fix as DatePickerInput §12e.A)
+- [x] **Auth rehydration bug found & fixed during this pass**: after app restart the store
+      restored tokens but never re-fetched the user profile, so `role` was undefined and
+      role-gated UI misclassified sessions (tenant saw "browsing as an owner"). Store now
+      rehydrates `getMe()` on token restore; property CTA shows a loading state until the
+      role resolves
 - [ ] **Dark mode**: token-level light/dark palettes; `useColorScheme` plumbing through
       ui-kit; audit every screen (guarded by a settings toggle first release)
 - [ ] **Accessibility**: labels on all touchables, 44pt hit targets, dynamic type audit,

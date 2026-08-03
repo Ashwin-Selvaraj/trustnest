@@ -18,7 +18,7 @@ export class AdminService {
   ) {}
 
   async listJobs(): Promise<BlockchainJob[]> {
-    return this.blockchainService.listJobs([JobStatus.PENDING, JobStatus.FAILED]);
+    return this.blockchainService.listJobs([JobStatus.PENDING, JobStatus.FAILED, JobStatus.DEAD]);
   }
 
   async retryJob(jobId: string): Promise<BlockchainJob> {

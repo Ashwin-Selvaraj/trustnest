@@ -145,19 +145,25 @@ export class BlockchainService implements OnModuleInit {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const isFatal = err instanceof ContractRevertError;
       const nextAttempts = job.attempts + 1;
-      const processAfter = isFatal || nextAttempts >= MAX_ATTEMPTS
+      // Terminal failures go to DEAD, which getPendingJobs never selects.
+      // (FAILED with processAfter=null used to be picked up again immediately —
+      // that's how one job reached 636 attempts.) Revival is admin-only via retryJob.
+      const isTerminal = isFatal || nextAttempts >= MAX_ATTEMPTS;
+      const processAfter = isTerminal
         ? null
         : new Date(Date.now() + BASE_DELAY_MS * Math.pow(2, nextAttempts));
 
       await this.jobRepo.update(job.id, {
-        status: isFatal || nextAttempts >= MAX_ATTEMPTS ? JobStatus.FAILED : JobStatus.PENDING,
+        status: isTerminal ? JobStatus.DEAD : JobStatus.PENDING,
         attempts: nextAttempts,
         lastError: errorMessage,
         processAfter,
       });
 
-      if (isFatal) {
-        this.logger.error(`Job ${job.id} failed fatally: ${errorMessage}`);
+      if (isTerminal) {
+        this.logger.error(
+          `Job ${job.id} dead-lettered after ${nextAttempts} attempt(s)${isFatal ? ' (fatal revert)' : ''}: ${errorMessage}`,
+        );
       } else {
         this.logger.warn(`Job ${job.id} failed (attempt ${nextAttempts}): ${errorMessage}`);
       }
@@ -298,12 +304,15 @@ export class BlockchainService implements OnModuleInit {
 
   async retryJob(jobId: string): Promise<BlockchainJob> {
     const job = await this.jobRepo.findOneOrFail({ where: { id: jobId } });
+    // Reset attempts so a revived DEAD job gets a full retry budget instead of
+    // dead-lettering again on its first failure.
     await this.jobRepo.update(jobId, {
       status: JobStatus.PENDING,
+      attempts: 0,
       processAfter: null,
       lastError: null,
     });
-    return { ...job, status: JobStatus.PENDING };
+    return { ...job, status: JobStatus.PENDING, attempts: 0 };
   }
 
   async listJobs(statuses: JobStatus[]): Promise<BlockchainJob[]> {

@@ -72,6 +72,14 @@ export type { InterestStatusChipProps } from './components/InterestStatusChip';
 export { TenantSummaryCard } from './components/TenantSummaryCard';
 export type { TenantSummaryCardProps } from './components/TenantSummaryCard';
 
+export { IconHome, IconBrowse, IconBell, IconPerson } from './components/TabBar';
+
+export { Skeleton, PropertyCardSkeleton, ListRowSkeleton } from './components/Skeleton';
+export type { SkeletonProps } from './components/Skeleton';
+
+export { Toast } from './components/Toast';
+export type { ToastProps, ToastVariant } from './components/Toast';
+
 // ─── Re-export shared enums used by marketplace components ───────────────────
 
 export { InterestStatus, BhkType, FurnishingStatus, PropertyStatus } from '@trustnest/shared';

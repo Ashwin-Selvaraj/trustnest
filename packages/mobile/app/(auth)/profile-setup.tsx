@@ -70,10 +70,12 @@ export default function ProfileSetupScreen(): React.ReactElement {
   };
 
   const handleDobChange = (text: string): void => {
-    let v = text.replace(/[^0-9/]/g, '');
-    if ((v.length === 2 || v.length === 5) && text.length > dob.length && !v.endsWith('/')) {
-      v = v + '/';
-    }
+    // Re-derive the format from digits alone so slashes survive fast typing,
+    // paste, and autofill (same approach as DatePickerInput).
+    const digits = text.replace(/\D/g, '').slice(0, 8);
+    let v = digits;
+    if (digits.length > 4)      v = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+    else if (digits.length > 2) v = `${digits.slice(0, 2)}/${digits.slice(2)}`;
     setDob(v);
     if (v.length === 10) setDobError(validateDob(v));
     else setDobError(undefined);

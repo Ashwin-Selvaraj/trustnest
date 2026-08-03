@@ -3,10 +3,11 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Banner, colors, spacing, fontSize, fontWeight, borderRadius } from '@trustnest/ui-kit';
+import { Banner, ListRowSkeleton, colors, spacing, fontSize, fontWeight, borderRadius } from '@trustnest/ui-kit';
 import { NotificationType } from '@trustnest/shared';
 import { useAuth } from '@/store/auth.store';
 import { useNotifications } from '@/store/notifications.store';
+import { useToast } from '@/store/toast.store';
 import { SignInPrompt } from '../../../components/SignInPrompt';
 import type { AppNotification } from '@/types/api';
 
@@ -29,6 +30,7 @@ function timeAgo(iso: string): string {
 export default function NotificationsScreen(): React.ReactElement {
   const { state } = useAuth();
   const { notifications, loading, refresh, markRead, markAllRead, unreadCount } = useNotifications();
+  const { showToast } = useToast();
   const [refreshing, setRefreshing] = React.useState(false);
 
   if (!state.isAuthenticated) {
@@ -57,7 +59,13 @@ export default function NotificationsScreen(): React.ReactElement {
       {unreadCount > 0 && (
         <View style={styles.headerRow}>
           <Text style={styles.headerCount}>{unreadCount} unread</Text>
-          <TouchableOpacity onPress={() => void markAllRead()} hitSlop={8}>
+          <TouchableOpacity
+            onPress={() => {
+              void markAllRead();
+              showToast('All notifications marked read');
+            }}
+            hitSlop={8}
+          >
             <Text style={styles.markAllText}>Mark all read</Text>
           </TouchableOpacity>
         </View>
@@ -69,7 +77,13 @@ export default function NotificationsScreen(): React.ReactElement {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void handleRefresh()} />}
         ListEmptyComponent={
-          loading ? null : (
+          loading ? (
+            <View style={styles.skeletonStack}>
+              <ListRowSkeleton />
+              <ListRowSkeleton />
+              <ListRowSkeleton />
+            </View>
+          ) : (
             <View style={styles.empty}>
               <Text style={styles.emptyEmoji}>🔔</Text>
               <Banner variant="info">
@@ -114,6 +128,7 @@ const styles = StyleSheet.create({
   headerCount: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSec },
   markAllText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.primary },
   listContent: { padding: spacing.base, gap: spacing.sm, flexGrow: 1 },
+  skeletonStack: { gap: spacing.sm },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingTop: spacing['2xl'] },
   emptyEmoji: { fontSize: 48 },
   card: {

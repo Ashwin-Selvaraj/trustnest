@@ -57,6 +57,8 @@ export enum JobStatus {
   PROCESSING = 'PROCESSING',
   DONE       = 'DONE',
   FAILED     = 'FAILED',
+  /** Terminal: exhausted MAX_ATTEMPTS or fatal revert. Never auto-retried; admin-only revival. */
+  DEAD       = 'DEAD',
 }
 
 // Mirrors the on-chain EscrowStatus enum in EscrowVault.sol

@@ -4,11 +4,40 @@
 
 import * as React from 'react';
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet,
+  View, Text, Image, TouchableOpacity, StyleSheet, Animated, Easing, Platform,
   type StyleProp, type ViewStyle,
 } from 'react-native';
 import { BhkType, FurnishingStatus, PropertyStatus } from '@trustnest/shared';
 import { colors, spacing, borderRadius, fontSize, fontWeight, shadow } from '../theme';
+
+/**
+ * Cover image that fades in on load — kills the abrupt pop-in of remote images.
+ * Native only: react-native-web's JS animation loop gets interrupted by FlatList
+ * re-renders, freezing the fade mid-flight, so web renders the image directly.
+ */
+function FadeInImage({ uri }: { uri: string }): React.ReactElement {
+  const opacity = React.useRef(new Animated.Value(0)).current;
+
+  if (Platform.OS === 'web') {
+    return <Image source={{ uri }} style={styles.image} resizeMode="cover" />;
+  }
+
+  return (
+    <Animated.Image
+      source={{ uri }}
+      style={[styles.image, { opacity }]}
+      resizeMode="cover"
+      onLoad={() =>
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 220,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }).start()
+      }
+    />
+  );
+}
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -86,7 +115,7 @@ export function PropertyCard({
       {/* Image section */}
       <View style={styles.imageContainer}>
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+          <FadeInImage uri={imageUrl} />
         ) : (
           <View style={styles.imagePlaceholder}>
             <Text style={styles.imagePlaceholderEmoji}>🏠</Text>

@@ -39,8 +39,10 @@ export interface TabBarProps {
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
+// Exported individually so navigation shells (e.g. expo-router <Tabs>) can use
+// the same icon set without adopting this TabBar component wholesale.
 
-function IconHome({ color }: { color: string }) {
+export function IconHome({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Path
@@ -51,7 +53,7 @@ function IconHome({ color }: { color: string }) {
   );
 }
 
-function IconBrowse({ color }: { color: string }) {
+export function IconBrowse({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Circle cx={11} cy={11} r={7} stroke={color} strokeWidth={1.8} />
@@ -60,7 +62,7 @@ function IconBrowse({ color }: { color: string }) {
   );
 }
 
-function IconBell({ color }: { color: string }) {
+export function IconBell({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Path
@@ -72,7 +74,7 @@ function IconBell({ color }: { color: string }) {
   );
 }
 
-function IconPerson({ color }: { color: string }) {
+export function IconPerson({ color }: { color: string }) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Circle cx={12} cy={8} r={4} stroke={color} strokeWidth={1.8} />
